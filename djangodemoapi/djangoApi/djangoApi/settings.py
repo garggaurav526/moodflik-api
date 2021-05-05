@@ -25,13 +25,13 @@ SECRET_KEY = '*2+rk9si%!j$9*wuwk4a$rs-nw-e*a9!7-u(6zgoh5)!8$6=+o'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    # 'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -81,12 +81,12 @@ WSGI_APPLICATION = 'djangoApi.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'moodflik',
-        'USER':'root',  
-        'PASSWORD':'root',  
-        'HOST':'localhost',  
-        'PORT':'3306'        
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': '7ezCm38oJGVQoMkflk7R',
+        'HOST': 'moodflik-db.cvrtkrmy8wqe.ap-south-1.rds.amazonaws.com',
+        'PORT': '5432',
     }
 }
 
@@ -126,8 +126,13 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
-
-STATIC_URL = '/static/'
+# S3_BUCKET_NAME = "moodflik-portal"
+# STATICFILES_STORAGE = "django_s3_storage.storage.StaticS3Storage"
+# AWS_S3_BUCKET_NAME_STATIC = S3_BUCKET_NAME
+# # serve the static files directly from the specified s3 bucket
+# AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % S3_BUCKET_NAME
+# STATIC_URL = "https://%s/" % AWS_S3_CUSTOM_DOMAIN
+# STATIC_URL = '/static/'
 
 # Rest Framework
 
