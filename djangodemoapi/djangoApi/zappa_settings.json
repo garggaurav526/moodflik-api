@@ -1,0 +1,10 @@
+{
+    "moodflik_dev": {
+        "aws_region": "us-east-2",
+        "django_settings": "djangoApi.settings",
+        "profile_name": "default",
+        "project_name": "djangoApi",
+        "runtime": "python3.7",
+        "s3_bucket": "moodflik-portal"
+    }
+}
