@@ -41,13 +41,15 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'User',
     'Post',
+    'corsheaders',
 ]
-
+CORS_ORIGIN_ALLOW_ALL = True
 AUTH_USER_MODEL = 'User.CustomUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -132,7 +134,7 @@ USE_TZ = True
 # # serve the static files directly from the specified s3 bucket
 # AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % S3_BUCKET_NAME
 # STATIC_URL = "https://%s/" % AWS_S3_CUSTOM_DOMAIN
-# STATIC_URL = '/static/'
+STATIC_URL = '/static/'
 
 # Rest Framework
 
