@@ -145,14 +145,15 @@ REST_FRAMEWORK = {
     ]
 }
 
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com' # mail service smtp
 # EMAIL_HOST_USER = 'nikita.kolte78@gmail.com' # email id
 # EMAIL_HOST_PASSWORD = 'I@Nikita4898' #password
 
-EMAIL_HOST_USER = 'nikita.k@cisinlabs.com' # email id
-EMAIL_HOST_PASSWORD = '' #password
+EMAIL_HOST_USER = 'info@moodflik.com' # email id
+EMAIL_HOST_PASSWORD = 'Moodflik20' #password
 EMAIL_PORT = 587
 # EMAIL_PORT = 465
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = 'nikita.k@cisinlabs.com'
+DEFAULT_FROM_EMAIL = 'info@moodflik.com'

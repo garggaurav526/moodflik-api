@@ -36,12 +36,16 @@ class Reactions(models.Model):
     like_post = models.ForeignKey(
       LikePost,
       on_delete=models.CASCADE,
-      related_name='Reactions'
+      related_name='Reactions',
+      blank=True,
+      null=True
     )
     dislike_post = models.ForeignKey(
       DislikePost,
       on_delete=models.CASCADE,
-      related_name='Reactions'
+      related_name='Reactions',
+      blank=True,
+      null=True
     )
     like = models.IntegerField()
     favorite = models.IntegerField()

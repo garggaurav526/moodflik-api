@@ -1,10 +1,10 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from rest_framework import serializers
 from .models import CustomUser, Bio
 from django.db.models import Q
 from django.conf import settings
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+import datetime
 
 class UserSerializer(serializers.ModelSerializer):
     GENDER = (
@@ -38,10 +38,23 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Username already exists.")
         return value
 
+    # def validate_date_of_birth(self, value):
+        # if value == None:
+            # raise serializers.ValidationError("please select date.")
+        # return value
+
     def validate_date_of_birth(self, value):
-        if value == None:
+        if value:
+            dob = value
+            print("dob:::", dob, datetime.datetime.now())
+            age = (datetime.date.today() - dob) // datetime.timedelta(days=365.2425)
+            print("age:::", age)
+            if age <= 13:
+                raise serializers.ValidationError('Must be greater than 13 years old to register')
+            return dob
+        else:
             raise serializers.ValidationError("please select date.")
-        return value
+        
 
     def validate_terms_confirmed(self, value):
         if value == 0:
@@ -51,6 +64,16 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = CustomUser.objects.create_user(**validated_data)
         return user       
+
+    def update(self, instance, validated_data):
+        instance.first_name = validated_data['first_name']
+        instance.last_name = validated_data['last_name']
+        instance.password = validated_data['password']
+        instance.date_of_birth = validated_data['date_of_birth']
+        instance.gender = validated_data['gender']
+        instance.save()
+
+        return instance
 
 class UserLoginSerializer(serializers.ModelSerializer):
     class Meta:

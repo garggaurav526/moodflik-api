@@ -26,6 +26,9 @@ urlpatterns = [
 
     url(r'^save_bio/$', views.BioDetails.as_view(), name="save_bio"),
     
-    url(r'^edit_bio/<int:pk>$', views.UpdateDetails.as_view(), name="edit_bio")
+    url(r'^bio_details/$', views.BioDetails.as_view(), name="bio_details"),
+    # url(r'^bio_details/<int:pk>$', views.BioDetails.as_view(), name="bio_details"),
+    # url('bio_details/<int:pk>', views.BioDetails.as_view()),
+    # url(r'^edit_user/<int:pid>$', views.UpdateUserDetails.as_view(), name="edit_user")
 
 ]
