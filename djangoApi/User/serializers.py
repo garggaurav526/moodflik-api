@@ -1,9 +1,8 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import CustomUser, Bio
+from .models import CustomUser, Bio, PrivacySettings
 from django.db.models import Q
 from django.conf import settings
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 import datetime
 
 class UserSerializer(serializers.ModelSerializer):
@@ -106,44 +105,12 @@ class UserLoginSerializer(serializers.ModelSerializer):
         print("new_data:::",new_data)
         return new_data
         
-        # def validate(self, data):
-    #     email = data.get('email')
-    #     password = data.get('password')
-
-    #     if email and password:
-    #         user = authenticate(email=email, password=password)
-    #         print("835472465754:",user)
-    #         if not user:
-    #             msg = 'Unable to log in with provided credentials.'
-    #             raise serializers.ValidationError(msg, code='authorization')
-    #     else:
-    #         msg = 'Must include "email" and "password".'
-    #         raise serializers.ValidationError(msg, code='authorization')
-
-    #     data['user'] = user
-    #     return data
-
-
-
-# class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-
-#     @classmethod
-#     def get_token(cls, user):
-#         token = super(MyTokenObtainPairSerializer, cls).get_token(user)
-
-#         print("token:::",token)
-#         # Add custom claims
-#         token['username'] = user.username
-#         return token
-
-
 class BioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bio
         fields = ['user', 'phone_number', 'country', 'city', 'website', 'me', 'like', 'dislike', 'photo_url']
 
     def update(self, instance, validated_data):
-        instance.user = validated_data['user']
         instance.phone_number = validated_data['phone_number']
         instance.country = validated_data['country']
         instance.city = validated_data['city']
@@ -155,3 +122,13 @@ class BioSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+class PrivacySettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrivacySettings
+        fields = ['user', 'privacy_settings']
+
+# class BlockUsersSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Block
+#         fields = ['user', 'blocked_user']

@@ -29,16 +29,24 @@ class Bio(models.Model):
     like = models.CharField(max_length=50)
     dislike = models.CharField(max_length=50)
     photo_url = models.CharField(max_length=255, blank =True, null=True)
+    cover_photo_url = models.CharField(max_length=255, blank =True, null=True)
 
-# class CustomUser(AbstractUser):
-#     GENDER_CHOICES = (
-#         ('M', 'Male'),
-#         ('F', 'Female'),
-#         ('N', 'Prefer not to say'),
+class PrivacySettings(models.Model):
+    user = models.ForeignKey(
+      CustomUser,
+      on_delete=models.CASCADE,
+      related_name='PrivacySettings'
+    )
+    privacy_settings = models.IntegerField(default=0, blank =True, null=True)
+
+# class Block(models.Model):
+#     user = models.ForeignKey(
+#       CustomUser,
+#       on_delete=models.CASCADE,
+#       related_name='Block'
 #     )
-#     date_of_birth = models.DateField(max_length=255, blank=True, null=True)
-#     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True)
-#     terms_confirmed = models.BooleanField(default=False)
-
-#     def __str__(self):
-#         return self.email
+#     blocked_user = models.ForeignKey(
+#       CustomUser,
+#       on_delete=models.CASCADE,
+#       related_name='blocked_user'
+#     )

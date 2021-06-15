@@ -84,10 +84,18 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'moodflik',
         'USER':'root',  
-        'PASSWORD':'root',  
+        'PASSWORD':'password',  
         'HOST':'localhost',  
         'PORT':'3306'        
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #     'NAME': 'postgres',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '7ezCm38oJGVQoMkflk7R',
+    #     'HOST': 'moodflik-db.cvrtkrmy8wqe.ap-south-1.rds.amazonaws.com',
+    #     'PORT': '5432',
+    # }
 }
 
 
@@ -132,6 +140,8 @@ STATIC_URL = '/static/'
 # Rest Framework
 
 REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 1,
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
