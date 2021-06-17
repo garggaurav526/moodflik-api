@@ -52,4 +52,16 @@ class Reactions(models.Model):
     dislike = models.IntegerField()
     share = models.IntegerField()
     seen = models.IntegerField()
-    comment = models.CharField(max_length=150)        
+    comment = models.CharField(max_length=150)
+
+class Follow(models.Model):
+  follower = models.ForeignKey(
+      CustomUser,
+      on_delete=models.CASCADE,
+      related_name='Follower'
+      )
+  following = models.ForeignKey(
+      CustomUser,
+      on_delete=models.CASCADE,
+      related_name='Following'
+      )
