@@ -4,22 +4,12 @@ from .models import LikePost, DislikePost, Follow
 class LikePostSerializer(serializers.ModelSerializer):
     class Meta:
         model = LikePost
-        fields = ['user', 'content', 'photo', 'video', 'gif', 'file', 'why_content']
-
-    def update(self, instance, validated_data):
-        instance.content = validated_data['content']
-        instance.photo = validated_data['photo']
-        instance.video = validated_data['video']
-        instance.gif = validated_data['gif']
-        instance.file = validated_data['file']
-        instance.why_content = validated_data['why_content']
-        instance.save()
-        return instance
+        fields = ['bio','content', 'photo', 'video', 'gif', 'file', 'why_content']
         
 class DislikePostSerializer(serializers.ModelSerializer):
     class Meta:
         model = DislikePost
-        fields = ['user', 'content', 'photo', 'video', 'gif', 'file', 'why_content']        
+        fields = ['bio', 'content', 'photo', 'video', 'gif', 'file', 'why_content']        
 
     def update(self, instance, validated_data):
         instance.content = validated_data['content']
@@ -34,4 +24,4 @@ class DislikePostSerializer(serializers.ModelSerializer):
 class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
-        fields = ['follower', 'following']        
+        fields = ['follower', 'following']

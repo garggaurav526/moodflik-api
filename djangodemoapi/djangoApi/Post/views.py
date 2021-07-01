@@ -1,14 +1,16 @@
 from django.shortcuts import render
 from rest_framework import generics, permissions, status, views
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .serializers import LikePostSerializer, DislikePostSerializer, FollowSerializer
-from .models import Reactions, LikePost, DislikePost, Follow
+from .models import LikePostReactions, DisLikePostReactions, LikePost, DislikePost, Follow
 
-from User.models import CustomUser
+from User.models import CustomUser, Bio
 
 class LikePostview(views.APIView):
 	authentication_classes = [TokenAuthentication]
@@ -17,7 +19,7 @@ class LikePostview(views.APIView):
 		try:
 			post_details = LikePost.objects.all()
 			paginator = PageNumberPagination()
-			paginator.page_size = 10
+			paginator.page_size = 20
 			result_page = paginator.paginate_queryset(post_details, request)
 			serializer = LikePostSerializer(result_page, many=True)
 			return Response({'status':True, 'post_details':serializer.data})
@@ -27,6 +29,14 @@ class LikePostview(views.APIView):
 
 	def post(self, request):
 		try:
+			bio = Bio.objects.get(user__email=request.user)
+
+			# changing the data into its mutable state
+			_mutable = request.data._mutable
+			request.data._mutable = True
+			request.data['bio'] = bio.id
+			request.data._mutable = _mutable
+
 			serializer = LikePostSerializer(data=request.data)
 			if serializer.is_valid(raise_exception=True):
 				serializer.save()
@@ -37,11 +47,24 @@ class LikePostview(views.APIView):
 
 	def put(self, request, post_id):
 		try:
-			post_details = get_object_or_404(LikePost.objects.all(), pk=post_id)
-			serializer = LikePostSerializer(instance=post_details, data=request.data, partial=True)
-			if serializer.is_valid(raise_exception=True):
-				article_saved = serializer.save()
-				return Response({'status': True, 'message': 'your details are successfully updated!'})
+			bio = Bio.objects.get(user__email=request.user)
+			post_details = LikePost.objects.get(pk=post_id)
+
+			if post_details:
+				post_details.bio = bio
+				post_details.content = request.data.get('content')
+				post_details.photo = request.data.get('photo')
+				post_details.video = request.data.get('video')
+				post_details.gif = request.data.get('gif')
+				post_details.file = request.data.get('file')
+				post_details.why_content = request.data.get('why_content')
+				post_details.save()
+
+				print("11111111111111111", post_details)
+				serializer = LikePostSerializer(post_details)
+				return Response({'status': True, 'updated_data':serializer.data})
+			else:
+				return Response({'status':False,'message':'please enter valid post id!'})
 		except Exception as e:
 			print("Error:",e)
 			return Response({'status': False, 'message':'something went wrong'})			
@@ -69,9 +92,19 @@ class DislikePostView(views.APIView):
 			serializer = DislikePostSerializer(result_page, many=True)
 			return Response({'status':True, 'dislikepost_details':serializer.data})
 		except Exception as e:
-			raise e
+			print("Error:", e)
+			return Response({'status': False ,'message': "something went wrong"})
+
 	def post(self, request):
 		try:
+			bio = Bio.objects.get(user__email=request.user)
+
+			# changing the data into its mutable state
+			_mutable = request.data._mutable
+			request.data._mutable = True
+			request.data['bio'] = bio.id
+			request.data._mutable = _mutable
+
 			serializer = DislikePostSerializer(data=request.data)
 			if serializer.is_valid(raise_exception=True):
 				serializer.save()
@@ -82,11 +115,21 @@ class DislikePostView(views.APIView):
 
 	def put(self, request, post_id):
 		try:
-			post_details = get_object_or_404(DislikePost.objects.all(), pk=post_id)
-			serializer = DislikePostSerializer(instance=post_details, data=request.data, partial=True)
-			if serializer.is_valid(raise_exception=True):
-				article_saved = serializer.save()
-				return Response({'status': True, 'message': 'your details are successfully updated!'})
+			bio = Bio.objects.get(user__email=request.user)
+			post_details = DislikePost.objects.get(pk=post_id)
+
+			if post_details:
+				post_details.bio = bio
+				post_details.content = request.data.get('content')
+				post_details.photo = request.data.get('photo')
+				post_details.video = request.data.get('video')
+				post_details.gif = request.data.get('gif')
+				post_details.file = request.data.get('file')
+				post_details.why_content = request.data.get('why_content')
+				post_details.save()
+
+				serializer = DislikePostSerializer(post_details)
+				return Response({'status': True, 'updated_data':serializer.data})
 		except Exception as e:
 			print("Error:", e)
 			return Response({'status': False ,'message': "something went wrong"})			
@@ -106,29 +149,44 @@ class AddFavorite(views.APIView):
 	permission_classes = [IsAuthenticated]
 	def get(self, request):
 		try:
-			likepost_favorites = Reactions.objects.filter(favorite=1,like_post__isnull=False,)
-			dislikepost_favorites = Reactions.objects.filter(favorite=1,dislike_post__isnull=False,)
-			# .exclude(user__email=users)
-			likepost_list = [
-			{'id':col.id, 'post_id':col.like_post_id,'user_who_added_favorite':col.users_id, 
-			'content': col.like_post.content, 'photo': col.like_post.photo,
-			'video':col.like_post.video, 'gif': col.like_post.gif, 'file': col.like_post.file, 
-			'why_content': col.like_post.why_content, 'post_user_id': col.like_post.user_id
-			} for col in likepost_favorites
-			]
+			like_filtered_posts = LikePost.objects.order_by('-created_date')
+			likepost_reactions = []
+			for post in like_filtered_posts:
+				filtered_reactions = LikePostReactions.objects.filter(like_post__id=post.id)
+				favorites = filtered_reactions.filter(favorite=1).values_list('bios__user_id')
+				like = filtered_reactions.filter(like=1).values_list('bios__user_id')
+				dislike = filtered_reactions.filter(dislike=1).values_list('bios__user_id')
+				share = filtered_reactions.filter(share=1).values_list('bios__user_id')
+				seen = filtered_reactions.filter(seen=1).values_list('bios__user_id')
+				comment = filtered_reactions.filter(comment__isnull=False).values_list('bios__user_id','comment')
+				if filtered_reactions.filter(favorite=1):
+					likepost_reactions.append({'post_id':post.id,'user_id':post.bio.user.id, 'username':post.bio.user.username,
+						'first_name':post.bio.user.first_name,'last_name':post.bio.user.last_name,
+						 'favorites':favorites, 'like':like,'profile_image':post.bio.photo_url,
+						'dislike':dislike, 'share':share, 'seen':seen, 
+						'comment':comment})
 
-			dislike_post_list = [
-			{'id':col.id, 'post_id':col.dislike_post_id,'user_who_added_favorite':col.users_id, 
-			'content': col.dislike_post.content, 'photo': col.dislike_post.photo,
-			'video':col.dislike_post.video, 'gif': col.dislike_post.gif, 'file': col.dislike_post.file, 
-			'why_content': col.dislike_post.why_content, 'post_user_id': col.dislike_post.user_id
-			} for col in dislikepost_favorites
-			]
+			dislike_filtered_posts = DislikePost.objects.order_by('-created_date')
+			dislikepost_reactions = []
+			for post in dislike_filtered_posts:
+				filtered_reactions = DisLikePostReactions.objects.filter(dislike_post__id=post.id,)
+				favorites = filtered_reactions.filter(favorite=1).values_list('bios__user_id')
+				like = filtered_reactions.filter(like=1).values_list('bios__user_id')
+				dislike = filtered_reactions.filter(dislike=1).values_list('bios__user_id')
+				share = filtered_reactions.filter(share=1).values_list('bios__user_id')
+				seen = filtered_reactions.filter(seen=1).values_list('bios__user_id')
+				comment = filtered_reactions.filter(comment__isnull=False).values_list('bios__user_id','comment')
+				if filtered_reactions.filter(favorite=1):			
+					dislikepost_reactions.append({'post_id':post.id,'user_id':post.bio.user.id, 'username':post.bio.user.username,
+						'first_name':post.bio.user.first_name,'last_name':post.bio.user.last_name,
+						 'favorites':favorites, 'like':like,'profile_image':post.bio.photo_url,
+						'dislike':dislike, 'share':share, 'seen':seen, 
+						'comment':comment})
 
 			paginator = PageNumberPagination()
 			paginator.page_size = 20
-			likepost_page = paginator.paginate_queryset(likepost_list, request)
-			dislikepost_page = paginator.paginate_queryset(dislike_post_list, request)
+			likepost_page = paginator.paginate_queryset(likepost_reactions, request)
+			dislikepost_page = paginator.paginate_queryset(dislikepost_reactions, request)
 			favorites = {'like_post': likepost_page, 'dislike_post':dislikepost_page}
 			return Response({'status':True, 'favorites':favorites})
 		except Exception as e:
@@ -139,39 +197,48 @@ class AddFavorite(views.APIView):
 		try:
 			data = request.data
 			favorite = 1
-			users = request.user
-			users = CustomUser.objects.get(email=users)
-			if data.get('like_post_id'):
-				like_post = data.get('like_post_id')
-				like_post = LikePost.objects.get(id=like_post)
-				favorite_exist = Reactions.objects.filter(users=users,
-				 favorite=favorite,
-				 like_post=like_post,
-				 )
-			else:
-				like_post = None
-			if data.get('dislike_post_id'):
-				dislike_post = data.get('dislike_post_id')
-				dislike_post = DislikePost.objects.get(id=dislike_post)
-				favorite_exist = Reactions.objects.filter(users=users,
-				 favorite=favorite,
-				 dislike_post=dislike_post,
-				 )
-			else:
-				dislike_post = None
 			like = 0
 			dislike = 0
 			share = 0
 			seen = 0
-			comment = 0
-
-			if not favorite_exist:
-				r = Reactions(like=like, dislike=dislike, share=share, seen=seen, comment=comment,
-				 users=users, like_post=like_post, dislike_post=dislike_post, favorite=favorite)
-				r.save()
-				return Response({'status': True})
-			else:
-				return Response({'status': False,'message': 'Already added this post to favorites!'})
+			comment = None
+			users = request.user
+			users = Bio.objects.get(user__email=users)
+			if data.get('like_post_id'):
+				like_post = data.get('like_post_id')
+				like_post = LikePost.objects.get(id=like_post)
+				if like_post:
+					favorite_exist = LikePostReactions.objects.filter(bios=users,
+					 favorite=favorite,
+					 like_post=like_post,
+					 )
+					if not favorite_exist:
+						r = LikePostReactions(like=like, dislike=dislike, share=share, seen=seen, comment=comment,
+						 bios=users, like_post=like_post, favorite=favorite)
+						r.save()
+						return Response({'status': True})
+					else:
+						return Response({'status': False, 'message':'Added Already to favorites'})
+				else:
+					return Response({'status':False, 'message':'please check the like_post id!'})
+			if data.get('dislike_post_id'):
+				dislike_post = data.get('dislike_post_id')
+				dislike_post = DislikePost.objects.get(id=dislike_post)
+				if dislike_post:
+					favorite_exist = DisLikePostReactions.objects.filter(bios=users,
+					 favorite=favorite,
+					 dislike_post=dislike_post,
+					 )
+					if not favorite_exist:
+						r = DisLikePostReactions(like=like, dislike=dislike, share=share, seen=seen, comment=comment,
+						 bios=users, dislike_post=dislike_post, favorite=favorite)
+						r.save()
+						return Response({'status': True})
+					else:
+						return Response({'status': False, 'message':'Added Already to favorites'})
+				else:
+					return Response({'status':False, 'message':'please check the dislike_post id!'})
+			return Response({'status': False,'message': 'Please pass likepost or dislikepost!'})
 		except Exception as e:
 			print("Error:", e)
 			return Response({'status': False ,'message': "something went wrong"})
@@ -179,43 +246,81 @@ class AddFavorite(views.APIView):
 class AddLike(views.APIView):
 	authentication_classes = [TokenAuthentication]
 	permission_classes = [IsAuthenticated]
+	def get(self, request,likepost_id, dislikepost_id):
+		try:
+			like_reactions = []
+			dislike_reactions = []
+			
+			# sending the data of likeposts
+			if likepost_id!=0:
+				filtered_reactions = LikePostReactions.objects.filter(
+					like_post__id=likepost_id, like=1)
+				like_reactions = [{'user_id':reactions.bios.user.id, 'user_email':reactions.bios.user.email,
+				'username':reactions.bios.user.username,'profile_photo':reactions.bios.photo_url,
+				'cover_photo':reactions.bios.cover_photo_url,'like':reactions.like,
+				} for reactions in filtered_reactions]
+
+			# sending the data of dislikeposts
+			if dislikepost_id!=0:
+				filtered_reactions = DisLikePostReactions.objects.filter(
+					dislike_post__id=dislikepost_id, like=1)
+				dislike_reactions = [{'user_id':reactions.bios.user.id, 'user_email':reactions.bios.user.email,
+				'username':reactions.bios.user.username,'profile_photo':reactions.bios.photo_url,
+				'cover_photo':reactions.bios.cover_photo_url, 'like':reactions.like,
+				} for reactions in filtered_reactions]
+
+			# Code for pagination
+			paginator = PageNumberPagination()
+			paginator.page_size = 20
+			likepost_page = paginator.paginate_queryset(like_reactions, request)
+			dislikepost_page = paginator.paginate_queryset(dislike_reactions, request)
+			dislikes = {'like_post': likepost_page, 'dislike_post':dislikepost_page}
+			return Response({'status':True, 'dislikes':dislikes})
+		except Exception as e:
+			print("Error:", e)
+			return Response({'status': False ,'message': "something went wrong"})
+
 	def post(self, request):
 		try:
 			data = request.data
 			like = 1
-			users = request.user
-			users = CustomUser.objects.get(email=users)
-			if data.get('like_post_id'):
-				like_post = data.get('like_post_id')
-				like_post = LikePost.objects.get(id=like_post)
-				like_exists = Reactions.objects.filter(users=users,
-					like_post=like_post,
-					like=like,
-				)
-			else:
-				like_post = None
-			if data.get('dislike_post_id'):
-				dislike_post = data.get('dislike_post_id')
-				dislike_post = DislikePost.objects.get(id=dislike_post)
-				like_exists = Reactions.objects.filter(users=users,
-					dislike_post=dislike_post,
-					like=like,
-				)
-			else:
-				dislike_post = None
 			favorite = 0
 			dislike = 0
 			share = 0
 			seen = 0
-			comment = 0
+			comment = None
+			users = request.user
+			users = Bio.objects.get(user__email=users)
 
-			if not like_exists:
-				r = Reactions(like=like, dislike=dislike, share=share, seen=seen, comment=comment,
-				 users=users, like_post=like_post, dislike_post=dislike_post, favorite=favorite)
-				r.save()
-			else:
-				return Response({'status': False,'message': 'Already added this post to likes!'})				
-			return Response({'status': True})
+			if data.get('like_post_id'):
+				like_post = data.get('like_post_id')
+				like_post = LikePost.objects.get(id=like_post)
+				like_exists = LikePostReactions.objects.filter(bios=users,
+					like_post=like_post,
+					like=like,
+				)
+				if not like_exists:
+					r = LikePostReactions(like=like, dislike=dislike, share=share, seen=seen, comment=comment,
+					 bios=users, like_post=like_post, favorite=favorite)
+					r.save()
+					return Response({'status': True})
+				else:
+					return Response({'status': False, 'message':'Added Already to favorites'})
+			if data.get('dislike_post_id'):
+				dislike_post = data.get('dislike_post_id')
+				dislike_post = DislikePost.objects.get(id=dislike_post)
+				like_exists = DisLikePostReactions.objects.filter(bios=users,
+					dislike_post=dislike_post,
+					like=like,
+				)
+				if not like_exists:
+					r = DisLikePostReactions(dislike=dislike, share=share, seen=seen, comment=comment,
+					 bios=users, dislike_post=dislike_post, favorite=favorite, like=like)
+					r.save()
+					return Response({'status': True})
+				else:
+					return Response({'status': False, 'message':'you have already liked the post!'})
+			return Response({'status': False,'message': 'Please pass likepost or dislikepost!'})
 		except Exception as e:
 			print("Error:", e)
 			return Response({'status': False ,'message': "something went wrong"})
@@ -223,43 +328,80 @@ class AddLike(views.APIView):
 class AddDislike(views.APIView):
 	authentication_classes = [TokenAuthentication]
 	permission_classes = [IsAuthenticated]
+	def get(self, request,likepost_id, dislikepost_id):
+		try:
+			like_reactions = []
+			dislike_reactions = []
+			# sending the data of likeposts
+			if likepost_id!=0:
+				filtered_reactions = LikePostReactions.objects.filter(
+					like_post__id=likepost_id, dislike=1)
+				like_reactions = [{'user_id':reactions.bios.user.id, 'user_email':reactions.bios.user.email,
+				'username':reactions.bios.user.username,'profile_photo':reactions.bios.photo_url,
+				'cover_photo':reactions.bios.cover_photo_url,'dislike':reactions.dislike,
+				} for reactions in filtered_reactions]
+
+			# sending the data of dislikeposts
+			if dislikepost_id!=0:
+				filtered_reactions = DisLikePostReactions.objects.filter(
+					dislike_post__id=dislikepost_id, dislike=1)
+				dislike_reactions = [{'user_id':reactions.bios.user.id, 'user_email':reactions.bios.user.email,
+				'username':reactions.bios.user.username,'profile_photo':reactions.bios.photo_url,
+				'cover_photo':reactions.bios.cover_photo_url, 'dislike':reactions.dislike,
+				} for reactions in filtered_reactions]
+
+			# Code for pagination
+			paginator = PageNumberPagination()
+			paginator.page_size = 20
+			likepost_page = paginator.paginate_queryset(like_reactions, request)
+			dislikepost_page = paginator.paginate_queryset(dislike_reactions, request)
+			dislikes = {'like_post': likepost_page, 'dislike_post':dislikepost_page}
+			return Response({'status':True, 'dislikes':dislikes})
+		except Exception as e:
+			print("Error:", e)
+			return Response({'status': False ,'message': "something went wrong"})
+
 	def post(self, request):
 		try:
 			data = request.data
 			dislike = 1
-			users = request.user
-			users = CustomUser.objects.get(email=users)
-			if data.get('like_post_id'):
-				like_post = data.get('like_post_id')
-				like_post = LikePost.objects.get(id=like_post)
-				dislike_exists = Reactions.objects.filter(users=users,
-					like_post=like_post,
-					dislike=dislike,
-				)
-			else:
-				like_post = None
-			if data.get('dislike_post_id'):
-				dislike_post = data.get('dislike_post_id')
-				dislike_post = DislikePost.objects.get(id=dislike_post)
-				dislike_exists = Reactions.objects.filter(users=users,
-					dislike_post=dislike_post,
-					dislike=dislike,
-				)				
-			else:
-				dislike_post = None
 			favorite = 0
 			like = 0
 			share = 0
 			seen = 0
-			comment = 0
+			comment = None
+			users = request.user
+			users = Bio.objects.get(user__email=users)
 
-			if not dislike_exists:
-				r = Reactions(like=like, dislike=dislike, share=share, seen=seen, comment=comment,
-				 users=users, like_post=like_post, dislike_post=dislike_post, favorite=favorite)
-				r.save()
-			else:
-				return Response({'status': False,'message': 'Already added this post to dislikes!'})				
-			return Response({'status': True})
+			if data.get('like_post_id'):
+				like_post = data.get('like_post_id')
+				like_post = LikePost.objects.get(id=like_post)
+				dislike_exists = LikePostReactions.objects.filter(bios=users,
+					like_post=like_post,
+					dislike=dislike,
+				)
+				if not dislike_exists:
+					r = LikePostReactions(dislike=dislike, share=share, seen=seen, comment=comment,
+					 bios=users, like_post=like_post, favorite=favorite, like=like)
+					r.save()
+					return Response({'status': True})
+				else:
+					return Response({'status': False, 'message':'you have already liked the post!'})
+			if data.get('dislike_post_id'):
+				dislike_post = data.get('dislike_post_id')
+				dislike_post = DislikePost.objects.get(id=dislike_post)
+				dislike_exists = DisLikePostReactions.objects.filter(bios=users,
+					dislike_post=dislike_post,
+					dislike=dislike,
+				)				
+				if not dislike_exists:
+					r = DisLikePostReactions(dislike=dislike, share=share, seen=seen, comment=comment,
+					 bios=users, dislike_post=dislike_post, favorite=favorite, like=like)
+					r.save()
+					return Response({'status': True})
+				else:
+					return Response({'status': False, 'message':'you have already liked the post!'})			
+			return Response({'status': False,'message': 'Please pass likepost or dislikepost!'})
 		except Exception as e:
 			print("Error:", e)
 			return Response({'status': False ,'message': "something went wrong"})
@@ -267,43 +409,79 @@ class AddDislike(views.APIView):
 class AddShare(views.APIView):
 	authentication_classes = [TokenAuthentication]
 	permission_classes = [IsAuthenticated]
+	def get(self, request,likepost_id, dislikepost_id):
+		try:
+			like_reactions = []
+			dislike_reactions = []
+			# sending the data of likeposts
+			if likepost_id!=0:
+				filtered_reactions = LikePostReactions.objects.filter(
+					like_post__id=likepost_id, share=1)
+				like_reactions = [{'user_id':reactions.bios.user.id, 'user_email':reactions.bios.user.email,
+				'username':reactions.bios.user.username,'profile_photo':reactions.bios.photo_url,
+				'cover_photo':reactions.bios.cover_photo_url,'share':reactions.share,
+				} for reactions in filtered_reactions]
+
+			# sending the data of dislikeposts
+			if dislikepost_id!=0:
+				filtered_reactions = DisLikePostReactions.objects.filter(
+					dislike_post__id=dislikepost_id, share=1)
+				dislike_reactions = [{'user_id':reactions.bios.user.id, 'user_email':reactions.bios.user.email,
+				'username':reactions.bios.user.username,'profile_photo':reactions.bios.photo_url,
+				'cover_photo':reactions.bios.cover_photo_url, 'share':reactions.share,
+				} for reactions in filtered_reactions]
+
+			# Code for pagination
+			paginator = PageNumberPagination()
+			paginator.page_size = 20
+			likepost_page = paginator.paginate_queryset(like_reactions, request)
+			dislikepost_page = paginator.paginate_queryset(dislike_reactions, request)
+			shares = {'like_post': likepost_page, 'dislike_post':dislikepost_page}
+			return Response({'status':True, 'shares':shares})		
+		except Exception as e:
+			print("Error:", e)
+			return Response({'status': False ,'message': "something went wrong"})	
 	def post(self, request):
 		try:
 			data = request.data
 			share = 1
-			users = request.user
-			users = CustomUser.objects.get(email=users)
-			if data.get('like_post_id'):
-				like_post = data.get('like_post_id')
-				like_post = LikePost.objects.get(id=like_post)
-				share_exists = Reactions.objects.filter(users=users,
-					like_post=like_post,
-					share=share,
-				)
-			else:
-				like_post = None
-			if data.get('dislike_post_id'):
-				dislike_post = data.get('dislike_post_id')
-				dislike_post = DislikePost.objects.get(id=dislike_post)
-				share_exists = Reactions.objects.filter(users=users,
-					dislike_post=dislike_post,
-					share=share,
-				)				
-			else:
-				dislike_post = None
 			favorite = 0
 			dislike = 0
 			like = 0
 			seen = 0
-			comment = 0
+			comment = None
+			users = request.user
+			users = Bio.objects.get(user__email=users)
 
-			if not share_exists:
-				r = Reactions(like=like, dislike=dislike, share=share, seen=seen, comment=comment,
-				 users=users, like_post=like_post, dislike_post=dislike_post, favorite=favorite)
-				r.save()
-			else:
-				return Response({'status': False,'message': 'Already added this post to shares!'})				
-			return Response({'status': True})
+			if data.get('like_post_id'):
+				like_post = data.get('like_post_id')
+				like_post = LikePost.objects.get(id=like_post)
+				share_exists = LikePostReactions.objects.filter(bios=users,
+					like_post=like_post,
+					share=share,
+				)
+				if not share_exists:
+					r = LikePostReactions(dislike=dislike, share=share, seen=seen, comment=comment,
+					 bios=users, like_post=like_post, favorite=favorite, like=like)
+					r.save()
+					return Response({'status': True})
+				else:
+					return Response({'status': False, 'message':'you have already liked the post!'})
+			if data.get('dislike_post_id'):
+				dislike_post = data.get('dislike_post_id')
+				dislike_post = DislikePost.objects.get(id=dislike_post)
+				share_exists = DisLikePostReactions.objects.filter(bios=users,
+					dislike_post=dislike_post,
+					share=share,
+				)
+				if not share_exists:
+					r = DisLikePostReactions(dislike=dislike, share=share, seen=seen, comment=comment,
+					 bios=users, dislike_post=dislike_post, favorite=favorite, like=like)
+					r.save()
+					return Response({'status': True})
+				else:
+					return Response({'status': False, 'message':'you have already liked the post!'})
+			return Response({'status': False,'message': 'Please pass likepost or dislikepost!'})
 		except Exception as e:
 			print("Error:", e)
 			return Response({'status': False ,'message': "something went wrong"})
@@ -311,44 +489,79 @@ class AddShare(views.APIView):
 class AddSeen(views.APIView):
 	authentication_classes = [TokenAuthentication]
 	permission_classes = [IsAuthenticated]
+	def get(self, request,likepost_id, dislikepost_id):
+		try:
+			like_reactions = []
+			dislike_reactions = []
+			# sending the data of likeposts
+			if likepost_id!=0:
+				filtered_reactions = LikePostReactions.objects.filter(
+					like_post__id=likepost_id, seen=1)
+				like_reactions = [{'user_id':reactions.bios.user.id, 'user_email':reactions.bios.user.email,
+				'username':reactions.bios.user.username,'profile_photo':reactions.bios.photo_url,
+				'cover_photo':reactions.bios.cover_photo_url,'seen':reactions.seen,
+				} for reactions in filtered_reactions]
+
+			# sending the data of dislikeposts
+			if dislikepost_id!=0:
+				filtered_reactions = DisLikePostReactions.objects.filter(
+					dislike_post__id=dislikepost_id, seen=1)
+				dislike_reactions = [{'user_id':reactions.bios.user.id, 'user_email':reactions.bios.user.email,
+				'username':reactions.bios.user.username,'profile_photo':reactions.bios.photo_url,
+				'cover_photo':reactions.bios.cover_photo_url, 'seen':reactions.seen,
+				} for reactions in filtered_reactions]
+
+			# Code for pagination
+			paginator = PageNumberPagination()
+			paginator.page_size = 20
+			likepost_page = paginator.paginate_queryset(like_reactions, request)
+			dislikepost_page = paginator.paginate_queryset(dislike_reactions, request)
+			seens = {'like_post': likepost_page, 'dislike_post':dislikepost_page}
+			return Response({'status':True, 'seens':seens})
+		except Exception as e:
+			print("Error:", e)
+			return Response({'status': False ,'message': "something went wrong"})
 	def post(self, request):
 		try:
 			data = request.data
 			seen = 1
-			users = request.user
-			users = CustomUser.objects.get(email=users)			
-			if data.get('like_post_id'):
-				like_post = data.get('like_post_id')
-				like_post = LikePost.objects.get(id=like_post)
-				seen_exists = Reactions.objects.filter(users=users,
-					like_post=like_post,
-					seen=seen,
-				)
-			else:
-				like_post = None
-			if data.get('dislike_post_id'):
-				dislike_post = data.get('dislike_post_id')
-				dislike_post = DislikePost.objects.get(id=dislike_post)
-				seen_exists = Reactions.objects.filter(users=users,
-					dislike_post=dislike_post,
-					seen=seen,
-				)
-			else:
-				dislike_post = None
 			favorite = 0
 			dislike = 0
 			share = 0
 			like = 0
-			comment = 0
+			comment = None
+			users = request.user
+			users = Bio.objects.get(user__email=users)
 
-			if not seen_exists:
-				r = Reactions(like=like, dislike=dislike, share=share, seen=seen, comment=comment,
-				 users=users, like_post=like_post, dislike_post=dislike_post, favorite=favorite)
-				r.save()
-			else:
-				return Response({'status': False,'message': 'Already added this post to seens!'})				
-
-			return Response({'status': True})
+			if data.get('like_post_id'):
+				like_post = data.get('like_post_id')
+				like_post = LikePost.objects.get(id=like_post)
+				seen_exists = LikePostReactions.objects.filter(bios=users,
+					like_post=like_post,
+					seen=seen,
+				)
+				if not seen_exists:
+					r = LikePostReactions(dislike=dislike, share=share, seen=seen, comment=comment,
+					 bios=users, like_post=like_post, favorite=favorite,like=like)
+					r.save()
+					return Response({'status': True})
+				else:
+					return Response({'status': False, 'message':'you have already liked the post!'})
+			if data.get('dislike_post_id'):
+				dislike_post = data.get('dislike_post_id')
+				dislike_post = DislikePost.objects.get(id=dislike_post)
+				seen_exists = DisLikePostReactions.objects.filter(bios=users,
+					dislike_post=dislike_post,
+					seen=seen,
+				)
+				if not seen_exists:
+					r = DisLikePostReactions(dislike=dislike, share=share, seen=seen, comment=comment,
+					 bios=users, dislike_post=dislike_post, favorite=favorite, like=like)
+					r.save()
+					return Response({'status': True})
+				else:
+					return Response({'status': False, 'message':'you have already liked the post!'})				
+			return Response({'status': False,'message': 'Please pass likepost or dislikepost!'})
 		except Exception as e:
 			print("Error:", e)
 			return Response({'status': False ,'message': "something went wrong"})
@@ -356,42 +569,82 @@ class AddSeen(views.APIView):
 class AddComment(views.APIView):
 	authentication_classes = [TokenAuthentication]
 	permission_classes = [IsAuthenticated]
+	def get(self, request,likepost_id, dislikepost_id):
+		try:
+			like_reactions = []
+			dislike_reactions = []
+			# sending the data of likeposts
+			if likepost_id!=0:
+				filtered_reactions = LikePostReactions.objects.filter(
+					like_post__id=likepost_id, comment__isnull=False)
+				like_reactions = [{'user_id':reactions.bios.user.id, 'user_email':reactions.bios.user.email,
+				'username':reactions.bios.user.username,'profile_photo':reactions.bios.photo_url,
+				'cover_photo':reactions.bios.cover_photo_url,'comment':reactions.comment,
+				} for reactions in filtered_reactions]
+
+			# sending the data of dislikeposts
+			if dislikepost_id!=0:
+				filtered_reactions = DisLikePostReactions.objects.filter(
+					dislike_post__id=dislikepost_id, comment__isnull=False)
+				dislike_reactions = [{'user_id':reactions.bios.user.id, 'user_email':reactions.bios.user.email,
+				'username':reactions.bios.user.username,'profile_photo':reactions.bios.photo_url,
+				'cover_photo':reactions.bios.cover_photo_url, 'comment':reactions.comment,
+				} for reactions in filtered_reactions]
+
+			# Code for pagination
+			paginator = PageNumberPagination()
+			paginator.page_size = 20
+			likepost_page = paginator.paginate_queryset(like_reactions, request)
+			dislikepost_page = paginator.paginate_queryset(dislike_reactions, request)
+			comments = {'like_post': likepost_page, 'dislike_post':dislikepost_page}
+			return Response({'status':True, 'comments':comments})
+		except Exception as e:
+			print("Error:", e)
+			return Response({'status': False ,'message': "something went wrong"})
+
 	def post(self, request):
 		try:
 			data = request.data
-			comment = 1
-			users = request.user
-			users = CustomUser.objects.get(email=users)			
-			if data.get('like_post_id'):
-				like_post = data.get('like_post_id')
-				like_post = LikePost.objects.get(id=like_post)
-				comment_exists = Reactions.objects.filter(users=users,
-					like_post=like_post,
-					comment=comment,
-				)				
-			else:
-				like_post = None
-			if data.get('dislike_post_id'):
-				dislike_post = data.get('dislike_post_id')
-				dislike_post = DislikePost.objects.get(id=dislike_post)
-				comment_exists = Reactions.objects.filter(users=users,
-					dislike_post=dislike_post,
-					comment=comment,
-				)				
-			else:
-				dislike_post = None
+			comment = data.get('comment')
 			favorite = 0
 			dislike = 0
 			share = 0
 			like = 0
 			seen = 0
+			users = request.user
+			users = Bio.objects.get(user__email=users)
 
-			if not comment_exists:
-				r = Reactions(like=like, dislike=dislike, share=share, seen=seen, comment=comment,
-				 users=users, like_post=like_post, dislike_post=dislike_post, favorite=favorite)
-				r.save()
-			else:
-				return Response({'status': False,'message': 'Already added this post to comments!'})				
+			if data.get('like_post_id'):
+				like_post = data.get('like_post_id')
+				like_post = LikePost.objects.get(id=like_post)
+				# comment_exists = LikePostReactions.objects.filter(users=users,
+				# 	like_post=like_post,
+				# 	comment=comment,
+				# )
+
+				if comment:
+					r = LikePostReactions(dislike=dislike, share=share,
+					 seen=seen, comment=comment, bios=users, 
+					 like_post=like_post, favorite=favorite, like=like)
+					r.save()
+					return Response({'status': True})
+				else:
+					return Response({'status': False, 'message':'Please comment!'})
+			if data.get('dislike_post_id'):
+				dislike_post = data.get('dislike_post_id')
+				dislike_post = DislikePost.objects.get(id=dislike_post)
+				# comment_exists = DisLikePostReactions.objects.filter(users=users,
+				# 	dislike_post=dislike_post,
+				# 	comment=comment,
+				# )
+				if comment:
+					r = DisLikePostReactions(dislike=dislike, share=share,
+					 seen=seen, comment=comment,bios=users, like=like,
+					 dislike_post=dislike_post, favorite=favorite)
+					r.save()
+					return Response({'status': True})
+				else:
+					return Response({'status': False, 'message':'you have already liked the post!'})			
 			return Response({'status': True})
 		except Exception as e:
 			print("Error:", e)
@@ -402,54 +655,50 @@ class Home(views.APIView):
 	permission_classes = [IsAuthenticated]
 	def get(self, request):
 		try:
-			like_filtered_posts = LikePost.objects.all()
-			dislike_filtered_posts = DislikePost.objects.all()
-
-			like_post_list = []
-			dislike_post_list = []
-			# saving all filtered likepost
+			like_filtered_posts = LikePost.objects.order_by('-created_date')
+			likepost_reactions = []
 			for post in like_filtered_posts:
-				filtered_reactions = Reactions.objects.filter(like_post__id=post.id)
-				like_count = filtered_reactions.filter(like=1).count()
-				dislike_count = filtered_reactions.filter(dislike=1).count()
-				share_count = filtered_reactions.filter(share=1).count()
-				seen_count = filtered_reactions.filter(seen=1).count()
-				comment_count = filtered_reactions.filter(comment=1).count()
-				favorite_count = filtered_reactions.filter(favorite=1).count()
-			
-				like_post_list.append({
-					'id':post.id , 'content': post.content, 'photo': post.photo,
-					'video':post.video, 'gif': post.gif, 'file': post.file, 
-					'why_content': post.why_content, 'user_id': post.user_id,
-					'like':like_count, 'dislike':dislike_count,
-					'share':share_count, 'seen':seen_count, 'comment':comment_count,
-					'favorite':favorite_count})
+				filtered_reactions = LikePostReactions.objects.filter(like_post__id=post.id)
+				favorites = filtered_reactions.filter(favorite=1).values_list('bios__user_id')
+				like = filtered_reactions.filter(like=1).values_list('bios__user_id')
+				dislike = filtered_reactions.filter(dislike=1).values_list('bios__user_id')
+				share = filtered_reactions.filter(share=1).values_list('bios__user_id')
+				seen = filtered_reactions.filter(seen=1).values_list('bios__user_id')
+				comment = filtered_reactions.filter(comment__isnull=False).values_list('bios__user_id','comment')
+				likepost_reactions.append({'post_id':post.id,'user_id':post.bio.user.id, 'username':post.bio.user.username,
+					'first_name':post.bio.user.first_name,'last_name':post.bio.user.last_name,
+					 'favorites':favorites, 'like':like,'profile_image':post.bio.photo_url,
+					'dislike':dislike, 'share':share, 'seen':seen, 
+					'comment':comment})
+			print(likepost_reactions)
 
-			# saving all filtered dislikepost
+
+			dislike_filtered_posts = DislikePost.objects.order_by('-created_date')
+			dislikepost_reactions = []
 			for post in dislike_filtered_posts:
-				filtered_reactions = Reactions.objects.filter(dislike_post__id=post.id)
-				like_count = filtered_reactions.filter(like=1).count()
-				dislike_count = filtered_reactions.filter(dislike=1).count()
-				share_count = filtered_reactions.filter(share=1).count()
-				seen_count = filtered_reactions.filter(seen=1).count()
-				comment_count = filtered_reactions.filter(comment=1).count()
-				favorite_count = filtered_reactions.filter(favorite=1).count()
-			
-				dislike_post_list.append({
-					'id':post.id, 'content': post.content, 'photo': post.photo,
-					'video':post.video, 'gif': post.gif, 'file': post.file, 
-					'why_content': post.why_content, 'user_id': post.user_id,
-					'like':like_count, 'dislike':dislike_count,
-					'share':share_count, 'seen':seen_count, 'comment':comment_count,
-					'favorite':favorite_count})
+				filtered_reactions = DisLikePostReactions.objects.filter(dislike_post__id=post.id)
+				favorites = filtered_reactions.filter(favorite=1).values_list('bios__user_id')
+				like = filtered_reactions.filter(like=1).values_list('bios__user_id')
+				dislike = filtered_reactions.filter(dislike=1).values_list('bios__user_id')
+				share = filtered_reactions.filter(share=1).values_list('bios__user_id')
+				seen = filtered_reactions.filter(seen=1).values_list('bios__user_id')
+				comment = filtered_reactions.filter(comment__isnull=False).values_list('bios__user_id','comment')
+				dislikepost_reactions.append({'post_id':post.id,'user_id':post.bio.user.id, 'username':post.bio.user.username,
+					'first_name':post.bio.user.first_name,'last_name':post.bio.user.last_name,
+					 'favorites':favorites, 'like':like,'profile_image':post.bio.photo_url,
+					'dislike':dislike, 'share':share, 'seen':seen, 
+					'comment':comment})
+			print(dislikepost_reactions)
 
 			# Code for implemeting pagination
+
 			paginator = PageNumberPagination()
 			paginator.page_size = 20
-			likepost_page = paginator.paginate_queryset(like_post_list, request)
-			dislikepost_page = paginator.paginate_queryset(dislike_post_list, request)
+			likepost_page = paginator.paginate_queryset(likepost_reactions, request)
+			dislikepost_page = paginator.paginate_queryset(dislikepost_reactions, request)
 
 			posts = {'like_post': likepost_page, 'dislike_post':dislikepost_page}
+			# posts = {'like_post': 'like_post_list'}
 			return Response({'status': True, 'posts': posts})
 		except Exception as e:
 			msg = str(e)
@@ -475,6 +724,7 @@ class FollowView(views.APIView):
 		except Exception as e:
 			print("Error:", e)
 			return Response({'status': False ,'message': "something went wrong"})
+
 	def post(self, request):
 		try:
 			user = CustomUser.objects.get(email=request.user)

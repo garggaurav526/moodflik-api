@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import CustomUser, Bio, PrivacySettings
+from .models import CustomUser, Bio, PostSettings, Contact, Block
 from django.db.models import Q
 from django.conf import settings
 import datetime
@@ -37,17 +37,10 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Username already exists.")
         return value
 
-    # def validate_date_of_birth(self, value):
-        # if value == None:
-            # raise serializers.ValidationError("please select date.")
-        # return value
-
     def validate_date_of_birth(self, value):
         if value:
             dob = value
-            print("dob:::", dob, datetime.datetime.now())
             age = (datetime.date.today() - dob) // datetime.timedelta(days=365.2425)
-            print("age:::", age)
             if age <= 13:
                 raise serializers.ValidationError('Must be greater than 13 years old to register')
             return dob
@@ -108,7 +101,7 @@ class UserLoginSerializer(serializers.ModelSerializer):
 class BioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bio
-        fields = ['user', 'phone_number', 'country', 'city', 'website', 'me', 'like', 'dislike', 'photo_url']
+        fields = ['user', 'phone_number', 'country', 'city', 'website', 'me', 'like', 'dislike', 'photo_url','cover_photo_url']
 
     def update(self, instance, validated_data):
         instance.phone_number = validated_data['phone_number']
@@ -119,16 +112,21 @@ class BioSerializer(serializers.ModelSerializer):
         instance.like = validated_data['like']
         instance.dislike = validated_data['dislike']
         instance.photo_url = validated_data['photo_url']
+        instance.cover_photo_url = validated_data['cover_photo_url']
         instance.save()
-
         return instance
 
-class PrivacySettingsSerializer(serializers.ModelSerializer):
+class PostSettingsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PrivacySettings
+        model = PostSettings
         fields = ['user', 'privacy_settings']
 
-# class BlockUsersSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Block
-#         fields = ['user', 'blocked_user']
+class BlockUsersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Block
+        fields = ['user', 'blocked_user']
+
+class ContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contact
+        fields = ['name', 'email', 'message']

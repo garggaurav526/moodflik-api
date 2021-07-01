@@ -30,23 +30,51 @@ class Bio(models.Model):
     dislike = models.CharField(max_length=50)
     photo_url = models.CharField(max_length=255, blank =True, null=True)
     cover_photo_url = models.CharField(max_length=255, blank =True, null=True)
+    @property
+    def bio_details(self):
+        "Returns the list of all fields"
+        post_list = {'id':self.user.id, 'email':self.user.email,
+         'username':self.user.username, 'profile_image':self.photo_url,
+         'cover_image':self.cover_photo_url}
+        return post_list
 
-class PrivacySettings(models.Model):
+class PostSettings(models.Model):
     user = models.ForeignKey(
       CustomUser,
       on_delete=models.CASCADE,
-      related_name='PrivacySettings'
+      related_name='PostSettings'
     )
     privacy_settings = models.IntegerField(default=0, blank =True, null=True)
 
-# class Block(models.Model):
-#     user = models.ForeignKey(
-#       CustomUser,
-#       on_delete=models.CASCADE,
-#       related_name='Block'
-#     )
-#     blocked_user = models.ForeignKey(
-#       CustomUser,
-#       on_delete=models.CASCADE,
-#       related_name='blocked_user'
-#     )
+class ShareBioSettings(models.Model):
+    user = models.ForeignKey(
+      CustomUser,
+      on_delete=models.CASCADE,
+      related_name='ShareBioSettings'
+    )
+    setting = models.IntegerField(default=0, blank =True, null=True)
+
+class ShowLikeDisLikeSettings(models.Model):
+    user = models.ForeignKey(
+      CustomUser,
+      on_delete=models.CASCADE,
+      related_name='ShowLikeDisLikeSettings'
+    )
+    setting = models.IntegerField(default=0, blank =True, null=True)
+
+class Block(models.Model):
+    user = models.ForeignKey(
+      CustomUser,
+      on_delete=models.CASCADE,
+      related_name='Block'
+    )
+    blocked_user = models.ForeignKey(
+      CustomUser,
+      on_delete=models.CASCADE,
+      related_name='blocked_user'
+    )
+
+class Contact(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    message = models.TextField()
