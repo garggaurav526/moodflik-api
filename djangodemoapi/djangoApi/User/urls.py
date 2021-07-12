@@ -13,7 +13,7 @@ urlpatterns = [
         views.UserRegistrationAPIView.as_view(),
         name='register'),
 
-    url(r'^password_reset/$', views.PasswordReset.as_view(), name="password_reset"),    
+    url(r'^password_reset/$', views.PasswordResetReq.as_view(), name="password_reset"),
 
     url(r'^authenticate_email/$', views.AuthenticateEmail.as_view(), name="authenticate_email"),
     

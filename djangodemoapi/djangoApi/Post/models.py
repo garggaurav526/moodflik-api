@@ -1,8 +1,8 @@
 from django.db import models
-from User.models import CustomUser, Bio
+from User.models import CustomUser, Bio,BaseModel
 from django.utils import timezone
 
-class LikePost(models.Model):
+class LikePost(BaseModel):
     bio = models.ForeignKey(
       Bio,
       on_delete=models.CASCADE,
@@ -31,7 +31,7 @@ class LikePost(models.Model):
       }
       return post_list
 
-class DislikePost(models.Model):
+class DislikePost(BaseModel):
     bio = models.ForeignKey(
       Bio,
       on_delete=models.CASCADE,
@@ -58,7 +58,7 @@ class DislikePost(models.Model):
       }
       return post_list
 
-class LikePostReactions(models.Model):
+class LikePostReactions(BaseModel):
     bios = models.ForeignKey(
       Bio,
       on_delete=models.CASCADE,
@@ -93,7 +93,7 @@ class LikePostReactions(models.Model):
       def comments(self):
         return self.comment
 
-class DisLikePostReactions(models.Model):
+class DisLikePostReactions(BaseModel):
     bios = models.ForeignKey(
       Bio,
       on_delete=models.CASCADE,
@@ -112,7 +112,7 @@ class DisLikePostReactions(models.Model):
     seen = models.IntegerField()
     comment = models.TextField(null=True)
 
-class Follow(models.Model):
+class Follow(BaseModel):
   follower = models.ForeignKey(
       CustomUser,
       on_delete=models.CASCADE,

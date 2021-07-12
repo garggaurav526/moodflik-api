@@ -72,6 +72,7 @@ class AuthenticateUser(views.APIView):
                 user_id = User.objects.get(username=username).id
                 authenticated_userid = {user_id}
                 obj, created = Token.objects.get_or_create(user=user)
+
                 return Response({'status': True,'token': obj.key,'user_id': user_id, 'message': 'you are successfully logged in!'})
             else:
                 return Response({'status': False, 'message': 'Please Enter valid login details!'})
@@ -93,25 +94,28 @@ class AuthenticateEmail(views.APIView):
             print("Error", e)
             return Response({'status': False,'message': "something went wrong"})
 
-class PasswordReset(views.APIView):
+from django.core.mail import EmailMessage
+from django.contrib.sites.shortcuts import get_current_site
+class PasswordResetReq(views.APIView):
+    # def post(self, request):
     def post(self, request):
-        try:
-            email = request.data.get('email')
-            password = request.data.get('password')
-            email_exists = User.objects.filter(email=email)
-            if email_exists:
-                if len(password) > getattr(settings, 'PASSWORD_MIN_LENGTH', 8):
-                    u = CustomUser.objects.get(email=email)
-                    u.set_password(password)
-                    u.save()
-                    return Response({'status': True, 'message':'password updated successfully!'})
-                else:
-                    return Response({'status':False, 'message':'password should be 8 characters long'})
-            else:
-                return Response({'status': False, 'message':'please enter valid email'})
-        except Exception as e:
-            print("Error", e)
-            return Response({'status': False,'message': "something went wrong"})
+        current_site = get_current_site(request)
+        user = User.objects.get(email=request.data.get('email'))
+        tok,created = Token.objects.get_or_create(user=user)
+        token = tok.key
+        relative_link = 'http://'+str(current_site.domain)+'/authentication/reset-password/'
+        # data = {'domain': current_site.domain}
+        absurl = relative_link + '?token=' + str(token)
+        print(absurl)
+        email = EmailMessage(
+            subject='Password Reset Link',
+            body="Link for Resetting your password : " + absurl,
+            to=[request.data.get("email")],
+        )
+        email.send(fail_silently=False)
+        return Response({'status':True, 'message':'Email Sent'})
+
+
 
 class BioDetails(views.APIView):
     authentication_classes = [TokenAuthentication]

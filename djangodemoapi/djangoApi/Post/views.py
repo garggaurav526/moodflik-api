@@ -669,7 +669,7 @@ class Home(views.APIView):
 					'first_name':post.bio.user.first_name,'last_name':post.bio.user.last_name,
 					 'favorites':favorites, 'like':like,'profile_image':post.bio.photo_url,
 					'dislike':dislike, 'share':share, 'seen':seen, 
-					'comment':comment})
+					'comment':comment,'created_at':post.created_at,'updated_at':post.updated_at})
 			print(likepost_reactions)
 
 
