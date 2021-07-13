@@ -94,3 +94,9 @@ class Contact(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField()
     message = models.TextField()
+
+
+class EmailOTPs(BaseModel):
+    email = models.EmailField()
+    otp = models.IntegerField(default=0)
+    is_used = models.BooleanField(default=False)

@@ -11,7 +11,7 @@ from django.conf import settings
 
 
 from .serializers import *
-from .models import CustomUser, Bio, Block, PostSettings, Contact, ShareBioSettings, ShowLikeDisLikeSettings
+from .models import CustomUser, Bio, Block, PostSettings, Contact, ShareBioSettings, ShowLikeDisLikeSettings,EmailOTPs
 
 User = get_user_model()
 
@@ -95,26 +95,52 @@ class AuthenticateEmail(views.APIView):
             return Response({'status': False,'message': "something went wrong"})
 
 from django.core.mail import EmailMessage
-from django.contrib.sites.shortcuts import get_current_site
+from random import randint
 class PasswordResetReq(views.APIView):
     # def post(self, request):
     def post(self, request):
-        current_site = get_current_site(request)
-        user = User.objects.get(email=request.data.get('email'))
-        tok,created = Token.objects.get_or_create(user=user)
-        token = tok.key
-        relative_link = 'http://'+str(current_site.domain)+'/authentication/reset-password/'
-        # data = {'domain': current_site.domain}
-        absurl = relative_link + '?token=' + str(token)
-        print(absurl)
-        email = EmailMessage(
-            subject='Password Reset Link',
-            body="Link for Resetting your password : " + absurl,
-            to=[request.data.get("email")],
-        )
-        email.send(fail_silently=False)
-        return Response({'status':True, 'message':'Email Sent'})
+        eml = request.data.get("email")
+        if User.objects.filter(email=eml).exists():
+            otp_code = randint(100000,999999)
+            if EmailOTPs.objects.filter(email=eml).exists():
+                EmailOTPs.objects.filter(email=eml).delete()
+            em = EmailOTPs()
+            em.email = eml
+            em.otp = otp_code
+            em.save()
+            email = EmailMessage(
 
+                subject='Password Reset Link',
+                body="OTP for Resetting your password : " + str(otp_code),
+                to=[eml],
+            )
+            email.send(fail_silently=False)
+            return Response({'status':True, 'message':'Email Sent'})
+
+
+class ValidateOTP(views.APIView):
+    def post(self,request):
+        data = request.data
+        if EmailOTPs.objects.filter(email=data.get('email'),otp=data.get('otp')).exists():
+            eo = EmailOTPs.objects.get(email=data.get('email'), otp=data.get('otp'))
+            if eo.is_used:
+                return Response({'status': False, 'message': 'OTP already used'})
+            eo.is_used = True
+            eo.save()
+            return Response({'status':True,'message':'OTP Correct'})
+        else:
+            return Response({'status': False, 'message': 'OTP Incorrect'})
+
+
+class ResetPassword(views.APIView):
+    def post(self,request):
+        data = request.data
+        if User.objects.filter(email=data.get('email')).exists():
+            usr = User.objects.get(email=data.get('email'))
+            usr.set_password(data.get('password'))
+            usr.save()
+            return Response({'status':True,'message':'Password changed'})
+        return Response({'status': False, 'message': 'Something went wrong'})
 
 
 class BioDetails(views.APIView):

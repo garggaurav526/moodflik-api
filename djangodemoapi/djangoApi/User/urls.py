@@ -14,6 +14,8 @@ urlpatterns = [
         name='register'),
 
     url(r'^password_reset/$', views.PasswordResetReq.as_view(), name="password_reset"),
+    url(r'^otp_validate/$', views.ValidateOTP.as_view(), name="otp_validate"),
+    url(r'^reset_pass/$', views.ResetPassword.as_view(), name="reset_pass"),
 
     url(r'^authenticate_email/$', views.AuthenticateEmail.as_view(), name="authenticate_email"),
     
