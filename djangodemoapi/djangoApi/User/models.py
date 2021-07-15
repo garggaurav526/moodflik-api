@@ -27,6 +27,7 @@ class CustomUser(AbstractUser):
     date_of_birth = models.DateField(max_length=255, blank=True, null=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True)
     terms_confirmed = models.BooleanField(default=False)
+    occupant_id = models.TextField(null=True,blank=True)
 
     def __str__(self):
         return self.email

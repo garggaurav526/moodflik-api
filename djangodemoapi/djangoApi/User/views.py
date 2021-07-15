@@ -12,8 +12,24 @@ from django.conf import settings
 
 from .serializers import *
 from .models import CustomUser, Bio, Block, PostSettings, Contact, ShareBioSettings, ShowLikeDisLikeSettings,EmailOTPs
-
+from Post.models import Follow
 User = get_user_model()
+
+def checkBioVisibility(ofuser,foruser):
+
+    if ShareBioSettings.objects.filter(user=foruser).exists():
+        s = ShareBioSettings.objects.get(user=foruser)
+        if s.setting==1 or s.setting==0:
+            return True
+        elif s.setting==2:
+            f = Follow.objects.filter(following=foruser,follower=ofuser).exists()
+            return f
+        elif s.setting==3:
+            f = Follow.objects.filter(follower=foruser,following=ofuser).exists()
+            return f
+        else:
+            return False
+    return True
 
 class UserRegistrationAPIView(generics.ListCreateAPIView):
     permission_classes = (permissions.AllowAny, )
@@ -21,7 +37,7 @@ class UserRegistrationAPIView(generics.ListCreateAPIView):
     queryset = User.objects.all()
 
     def post(self,request):
-        # import pdb;pdb.set_trace()
+
         data=request.data
         ser = self.serializer_class(data=data)
         if ser.is_valid():
@@ -62,16 +78,18 @@ class UserView(views.APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     def get(self, request, user_id):
-        # import pdb;pdb.set_trace()
+
         try:
             user_detail = Bio.objects.filter(user=user_id)
-            user_details = [{'user_id':user.user.id, 'username':user.user.username,
-            'email':user.user.email,'profile_image':user.photo_url, 'cover_image':user.cover_photo_url
-            } for user in user_detail]
-            return Response({'status': True, 'users': user_details})
+            if request.user.id==user_id or checkBioVisibility(request.user,CustomUser.objects.get(id=user_id)):
+                user_details = [{'user_id':user.user.id, 'username':user.user.username,
+                'email':user.user.email,'profile_image':user.photo_url, 'cover_image':user.cover_photo_url
+                } for user in user_detail]
+                return Response({'status': True, 'users': user_details})
+            return Response({'status': False, 'users': "User Details hidden"})
         except Exception as e:
             print("Error:", e)
-            return Response({'status': False ,'message': "something went wrong"})    
+            return Response({'status': False ,'message': "something went wrong"})
 
 class AuthenticateUser(views.APIView):
     def post(self, request):
