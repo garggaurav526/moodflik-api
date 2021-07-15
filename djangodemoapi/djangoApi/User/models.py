@@ -37,13 +37,13 @@ class Bio(models.Model):
       on_delete=models.CASCADE,
       related_name='Bio'
     )
-    phone_number = models.CharField(max_length=12)
-    country = models.CharField(max_length=255)
-    city = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=12,null=True,blank=True)
+    country = models.CharField(max_length=255,null=True,blank=True)
+    city = models.CharField(max_length=255,null=True,blank=True)
     website = models.CharField(max_length=255, blank=True, null=True)
-    me = models.CharField(max_length=30)
-    like = models.CharField(max_length=50)
-    dislike = models.CharField(max_length=50)
+    me = models.CharField(max_length=30,null=True,blank=True)
+    like = models.CharField(max_length=50,null=True,blank=True)
+    dislike = models.CharField(max_length=50,null=True,blank=True)
     photo_url = models.CharField(max_length=255, blank =True, null=True)
     cover_photo_url = models.CharField(max_length=255, blank =True, null=True)
     @property

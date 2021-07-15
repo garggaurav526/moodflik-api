@@ -15,10 +15,24 @@ from .models import CustomUser, Bio, Block, PostSettings, Contact, ShareBioSetti
 
 User = get_user_model()
 
-class UserRegistrationAPIView(generics.CreateAPIView):
+class UserRegistrationAPIView(generics.ListCreateAPIView):
     permission_classes = (permissions.AllowAny, )
     serializer_class = UserSerializer
     queryset = User.objects.all()
+
+    def post(self,request):
+        # import pdb;pdb.set_trace()
+        data=request.data
+        ser = self.serializer_class(data=data)
+        if ser.is_valid():
+            ser.save()
+            user = User.objects.get(email=ser.data.get('email'))
+            bio = Bio()
+            bio.user = user
+            bio.save()
+            return Response(ser.data)
+        else:
+            return Response(ser.errors)
 
 class ContactAPIView(views.APIView):
     authentication_classes = [TokenAuthentication]
@@ -48,6 +62,7 @@ class UserView(views.APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     def get(self, request, user_id):
+        # import pdb;pdb.set_trace()
         try:
             user_detail = Bio.objects.filter(user=user_id)
             user_details = [{'user_id':user.user.id, 'username':user.user.username,
@@ -162,7 +177,7 @@ class BioDetails(views.APIView):
 
     def post(self, request):
     	try:
-            bio = Bio.objects.filter(user_id=request.data.get('user'))
+            bio = Bio.objects.filter(user_id=request.data.get('user')).first()
             user = CustomUser.objects.get(id = request.data.get('user'))
             if not bio:
                 serializer = BioSerializer(data=request.data)
@@ -173,7 +188,12 @@ class BioDetails(views.APIView):
                 else:
                     return({'status':False, 'message':'please enter valid details!'})
             else:
-                return Response({'status': False, 'message': 'Profile already exists!'})
+                serializer = BioSerializer(bio,data=request.data,partial=True)
+                if serializer.is_valid(raise_exception=True):
+                    serializer.save()
+                    return Response({'status': True, 'message': 'your details are successfully saved!'})
+                else:
+                    return({'status':False, 'message':'please enter valid details!'})
     	except Exception as e:
     		print("Error:", e)
     		return Response({'status': False ,'message': "something went wrong"})
@@ -367,4 +387,11 @@ class BlockUsers(views.APIView):
                 return Response({'status': False, 'message': 'Please enter valid blocked_user!'})
         except Exception as e:
             print("Error:", e)
-            return Response({'status': False ,'message': "something went wrong"})            
+            return Response({'status': False ,'message': "something went wrong"})
+
+
+class AllUsers(views.APIView):
+    def get(self,request):
+        users = User.objects.all()
+        ser = UserSerializer(users,many=True).data
+        return Response(ser)
