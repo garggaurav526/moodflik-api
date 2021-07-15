@@ -737,3 +737,6 @@ class FollowView(views.APIView):
 		except Exception as e:
 			return Response({'status': False ,'message': "something went wrong"})
 			
+
+
+# class MyPostStats(class)

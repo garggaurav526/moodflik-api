@@ -12,7 +12,7 @@ from django.conf import settings
 
 from .serializers import *
 from .models import CustomUser, Bio, Block, PostSettings, Contact, ShareBioSettings, ShowLikeDisLikeSettings,EmailOTPs
-from Post.models import Follow
+from Post.models import Follow,LikePost,DislikePost
 User = get_user_model()
 
 def checkBioVisibility(ofuser,foruser):
@@ -183,7 +183,7 @@ class BioDetails(views.APIView):
         try:
             user = CustomUser.objects.get(email=request.user)
             bio = Bio.objects.filter(user=user)
-            bio_details = [{'bio_id':col.id, 'user_id':col.user.id, 
+            bio_details = [{'bio_id':col.id, 'user_id':col.user.id,
                 'username': col.user.username, 'email': col.user.email, 'profile_photo':col.photo_url,
                 'phone_number':col.phone_number, 'country':col.country, 'city':col.city,
                 'website':col.website, 'me':col.me, 'like':col.like, 'dislike': col.dislike,
@@ -413,3 +413,16 @@ class AllUsers(views.APIView):
         users = User.objects.all()
         ser = UserSerializer(users,many=True).data
         return Response(ser)
+
+
+class PostStats(views.APIView):
+    def get(self,request,user_id):
+        try:
+            user_detail = Bio.objects.filter(user=user_id)
+            total_likes = LikePost.objects.filter(bio=user_detail).count()
+            total_dislikes = DislikePost.objects.filter(bio=user_detail).count()
+            return Response({'status': True, 'total_likes': total_likes,'total_dislikes':total_dislikes})
+
+        except Exception as e:
+            print("Error:", e)
+            return Response({'status': False ,'message': "something went wrong"})

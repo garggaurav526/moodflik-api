@@ -35,6 +35,7 @@ urlpatterns = [
     url(r'^remove_blocked_user/(?P<blockeduser_id>\d+)/$', views.BlockUsers.as_view(), name="remove_blocked_user"),
 
     url(r'^contact_us/$', views.ContactAPIView.as_view(), name='contact_us'),
-    url(r'^au/$', views.AllUsers.as_view(), name='au'),
+    url(r'^all_users/$', views.AllUsers.as_view(), name='all_users'),
+    url(r'^post_stats/(?P<user_id>\d+)$', views.PostStats.as_view(), name='post_stats'),
 
 ]
