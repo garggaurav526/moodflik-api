@@ -48,7 +48,7 @@ class UserRegistrationAPIView(generics.ListCreateAPIView):
             bio.save()
             return Response(ser.data)
         else:
-            return Response(ser.errors)
+            return Response(ser.errors,status=status.HTTP_400_BAD_REQUEST)
 
 class ContactAPIView(views.APIView):
     authentication_classes = [TokenAuthentication]
@@ -61,7 +61,7 @@ class ContactAPIView(views.APIView):
             return Response({'status': True, 'contact_us': serializer.data})
         except Exception as e:
             print("Error:", e)
-            return Response({'status': False ,'message': "something went wrong"})
+            return Response({'status': False ,'message': "something went wrong"},status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, request):
         try:
@@ -72,7 +72,7 @@ class ContactAPIView(views.APIView):
             return Response({'status': False, 'message': 'Please Enter valid details!'})
         except Exception as e:
             print("Error:", e)
-            return Response({'status': False ,'message': "something went wrong"})
+            return Response({'status': False ,'message': "something went wrong"},status=status.HTTP_400_BAD_REQUEST)
 
 class UserView(views.APIView):
     authentication_classes = [TokenAuthentication]
@@ -89,7 +89,7 @@ class UserView(views.APIView):
             return Response({'status': False, 'users': "User Details hidden"})
         except Exception as e:
             print("Error:", e)
-            return Response({'status': False ,'message': "something went wrong"})
+            return Response({'status': False ,'message': "something went wrong"},status=status.HTTP_400_BAD_REQUEST)
 
 class AuthenticateUser(views.APIView):
     def post(self, request):
@@ -108,10 +108,10 @@ class AuthenticateUser(views.APIView):
 
                 return Response({'status': True,'token': obj.key,'user_id': user_id, 'message': 'you are successfully logged in!'})
             else:
-                return Response({'status': False, 'message': 'Please Enter valid login details!'})
+                return Response({'status': False, 'message': 'Please Enter valid login details!'},status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             print("Error:", e)
-            return Response({'status': False ,'message': "something went wrong"})
+            return Response({'status': False ,'message': "something went wrong"},status=status.HTTP_400_BAD_REQUEST)
 
 
 class AuthenticateEmail(views.APIView):
@@ -125,7 +125,7 @@ class AuthenticateEmail(views.APIView):
                 return Response({'status': False})
         except Exception as e:
             print("Error", e)
-            return Response({'status': False,'message': "something went wrong"})
+            return Response({'status': False,'message': "something went wrong"},status=status.HTTP_400_BAD_REQUEST)
 
 from django.core.mail import EmailMessage
 from random import randint
@@ -162,7 +162,7 @@ class ValidateOTP(views.APIView):
             eo.save()
             return Response({'status':True,'message':'OTP Correct'})
         else:
-            return Response({'status': False, 'message': 'OTP Incorrect'})
+            return Response({'status': False, 'message': 'OTP Incorrect'},status=status.HTTP_400_BAD_REQUEST)
 
 
 class ResetPassword(views.APIView):
@@ -173,7 +173,7 @@ class ResetPassword(views.APIView):
             usr.set_password(data.get('password'))
             usr.save()
             return Response({'status':True,'message':'Password changed'})
-        return Response({'status': False, 'message': 'Something went wrong'})
+        return Response({'status': False, 'message': 'Something went wrong'},status=status.HTTP_400_BAD_REQUEST)
 
 
 class BioDetails(views.APIView):
@@ -191,7 +191,7 @@ class BioDetails(views.APIView):
             return Response({'status': True, 'bio_details': bio_details})
         except Exception as e:
             print("Error:", e)
-            return Response({'status': False ,'message': "something went wrong"})
+            return Response({'status': False ,'message': "something went wrong"},status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, request):
     	try:
