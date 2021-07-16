@@ -184,7 +184,7 @@ class BioDetails(views.APIView):
             user = CustomUser.objects.get(email=request.user)
             bio = Bio.objects.filter(user=user)
             bio_details = [{'bio_id':col.id, 'user_id':col.user.id,
-                'username': col.user.username, 'email': col.user.email, 'profile_photo':col.photo_url,
+                'username': col.user.username,'first_name': col.user.first_name,'last_name': col.user.last_name, 'email': col.user.email, 'profile_photo':col.photo_url,
                 'phone_number':col.phone_number, 'country':col.country, 'city':col.city,
                 'website':col.website, 'me':col.me, 'like':col.like, 'dislike': col.dislike,
                 'cover_photo_url':col.cover_photo_url} for col in bio]

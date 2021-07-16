@@ -14,6 +14,7 @@ urlpatterns = [
     url(r'^dislikepost/(?P<post_id>\d+)/$',views.DislikePostView.as_view(),name='dislikepost'),
 
     url(r'add_favorite/$',views.AddFavorite.as_view(),name='add_favorite'),
+    url(r'dislike_favorite/$',views.DislikeFav.as_view(),name='dislike_favorite'),
 
     url(r'^add_like/(?P<likepost_id>\d+)/(?P<dislikepost_id>\d+)/$',views.AddLike.as_view(),name='add_like'),
     url(r'^add_like/$',views.AddLike.as_view(),name='add_like'),
@@ -31,6 +32,8 @@ urlpatterns = [
     url(r'^add_comment/$',views.AddComment.as_view(),name='add_comment'),
     
     url(r'^home/$',views.Home.as_view(),name='home'),
+    url(r'^comments/(?P<id>\d+)/$',views.CommentsAPI.as_view(),name='home'),
+    url(r'^dislikehome/$',views.HomeDislikePosts.as_view(),name='home'),
     # Api for getting the followers and following data
     url(r'^follow_details/$',views.FollowView.as_view(),name='follow_details'),
 ]
