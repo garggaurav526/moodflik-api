@@ -28,7 +28,7 @@ class LikePostview(views.APIView):
 			return Response({'status': False ,'message': "something went wrong"})
 
 	def post(self, request):
-		# import pdb;pdb.set_trace()
+
 		try:
 			bio = Bio.objects.get(user__email=request.user)
 
@@ -312,6 +312,9 @@ class AddLike(views.APIView):
 			users = Bio.objects.get(user__email=users)
 
 			if data.get('like_post_id'):
+				if LikePostReactions.objects.filter(bios=users.id,
+					like_post__id=data.get('like_post_id'), dislike=1).exists():
+					return Response({'status':False})
 				like_post = data.get('like_post_id')
 				like_post = LikePost.objects.get(id=like_post)
 				like_exists = LikePostReactions.objects.filter(bios=users,
@@ -326,6 +329,9 @@ class AddLike(views.APIView):
 				else:
 					return Response({'status': False, 'message':'Added Already to favorites'})
 			if data.get('dislike_post_id'):
+				if DisLikePostReactions.objects.filter(bios=users.id,
+					like_post__id=data.get('dislike_post_id'), dislike=1).exists():
+					return Response({'status':False})
 				dislike_post = data.get('dislike_post_id')
 				dislike_post = DislikePost.objects.get(id=dislike_post)
 				like_exists = DisLikePostReactions.objects.filter(bios=users,
@@ -393,6 +399,10 @@ class AddDislike(views.APIView):
 			users = Bio.objects.get(user__email=users)
 
 			if data.get('like_post_id'):
+				# if data.get('like_post_id'):
+				if LikePostReactions.objects.filter(bios=users.id,
+						like_post__id=data.get('like_post_id'), like=1).exists():
+					return Response({'status': False})
 				like_post = data.get('like_post_id')
 				like_post = LikePost.objects.get(id=like_post)
 				dislike_exists = LikePostReactions.objects.filter(bios=users,
@@ -407,6 +417,9 @@ class AddDislike(views.APIView):
 				else:
 					return Response({'status': False, 'message':'you have already liked the post!'})
 			if data.get('dislike_post_id'):
+				if DisLikePostReactions.objects.filter(bios=users.id,
+					like_post__id=data.get('dislike_post_id'), like=1).exists():
+					return Response({'status':False})
 				dislike_post = data.get('dislike_post_id')
 				dislike_post = DislikePost.objects.get(id=dislike_post)
 				dislike_exists = DisLikePostReactions.objects.filter(bios=users,
@@ -709,6 +722,7 @@ class HomeDislikePosts(views.APIView):
 	authentication_classes = [TokenAuthentication]
 	permission_classes = [IsAuthenticated]
 	def get(self,request):
+		# import pdb;pdb.set_trace()
 		dislike_filtered_posts = DislikePost.objects.order_by('-created_date')
 		dislikepost_reactions = []
 		for post in dislike_filtered_posts:
@@ -722,8 +736,7 @@ class HomeDislikePosts(views.APIView):
 			dislikepost_reactions.append(
 				{'post_id': post.id, 'why_content': post.why_content, 'file': post.file, 'gif': post.gif,
 				 'video': post.video, 'photo': post.photo, 'content': post.content, 'user_id': post.bio.user.id,
-				 'username': post.bio.user.username,
-				 'first_name': post.bio.user.first_name, 'last_name': post.bio.user.last_name,
+				 'username': post.bio.user.username,'first_name': post.bio.user.first_name, 'last_name': post.bio.user.last_name,
 				 'favorites': favorites, 'like': like, 'profile_image': post.bio.photo_url,
 				 'dislike': dislike, 'share': share, 'seen': seen,
 				 'comment': comment, 'created_at': post.created_at, 'updated_at': post.updated_at})
