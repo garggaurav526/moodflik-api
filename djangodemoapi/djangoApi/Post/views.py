@@ -30,15 +30,20 @@ class LikePostview(views.APIView):
 	def post(self, request):
 
 		try:
+
 			bio = Bio.objects.get(user__email=request.user)
 
 			# changing the data into its mutable state
 			# _mutable = request.data._mutable
-			# request.data._mutable = True
-			request.data['bio'] = bio.id
+			try:
+				request.data._mutable = True
+			except:
+				pass
+			data = request.data
+			data['bio'] = bio.id
 			# request.data._mutable = _mutable
 
-			serializer = LikePostSerializer(data=request.data)
+			serializer = LikePostSerializer(data=data)
 			if serializer.is_valid(raise_exception=True):
 				serializer.save()
 				return Response({'status': True, 'message': 'your details are successfully saved!'})
@@ -102,7 +107,10 @@ class DislikePostView(views.APIView):
 
 			# changing the data into its mutable state
 			# _mutable = request.data._mutable
-			# request.data._mutable = True
+			try:
+				request.data._mutable = True
+			except:
+				pass
 			request.data['bio'] = bio.id
 			# request.data._mutable = _mutable
 
@@ -722,7 +730,7 @@ class HomeDislikePosts(views.APIView):
 	authentication_classes = [TokenAuthentication]
 	permission_classes = [IsAuthenticated]
 	def get(self,request):
-		# import pdb;pdb.set_trace()
+
 		dislike_filtered_posts = DislikePost.objects.order_by('-created_date')
 		dislikepost_reactions = []
 		for post in dislike_filtered_posts:
