@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import CustomUser, Bio, PostSettings, Contact, Block
+from .models import CustomUser, Bio, PostSettings, Contact, Block,PostNotification,OtherSettings
 from django.db.models import Q
 from django.conf import settings
 import datetime
@@ -130,3 +130,14 @@ class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
         fields = ['name', 'email', 'message']
+
+
+class PNSSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostNotification
+        fields = '__all__'
+
+class OSSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OtherSettings
+        fields = '__all__'

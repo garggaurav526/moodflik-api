@@ -36,6 +36,8 @@ urlpatterns = [
 
     url(r'^contact_us/$', views.ContactAPIView.as_view(), name='contact_us'),
     url(r'^all_users/$', views.AllUsers.as_view(), name='all_users'),
+    url(r'^post_notifications/$', views.PostNotificationAPI.as_view(), name='post_notification'),
+    url(r'^others_settings/$', views.OtherNotificationAPI.as_view(), name='others_settings'),
     url(r'^post_stats/(?P<user_id>\d+)$', views.PostStats.as_view(), name='post_stats'),
 
 ]

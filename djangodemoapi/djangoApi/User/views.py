@@ -426,3 +426,33 @@ class PostStats(views.APIView):
         except Exception as e:
             print("Error:", e)
             return Response({'status': False ,'message': "something went wrong"})
+
+
+class PostNotificationAPI(views.APIView):
+    def post(self,request):
+        # import pdb;pdb.set_trace()
+        data=request.data
+        if PostNotification.objects.filter(user=data.get('user')).exists():
+            obj = PostNotification.objects.get(user=data.get('user'))
+            ser = PNSSerializer(obj,data=data,partial=True)
+        else:
+            ser = PNSSerializer(data=data)
+        if ser.is_valid():
+            ser.save()
+            return Response({'status':True})
+        else:
+            return Response({'status': False},status=status.HTTP_400_BAD_REQUEST)
+
+class OtherNotificationAPI(views.APIView):
+    def post(self,request):
+        data=request.data
+        if OtherSettings.objects.filter(user=data.get('user')).exists():
+            obj = OtherSettings.objects.get(user=data.get('user'))
+            ser = OSSerializer(obj,data=data,partial=True)
+        else:
+            ser = OSSerializer(data=data)
+        if ser.is_valid():
+            ser.save()
+            return Response({'status':True})
+        else:
+            return Response({'status': False},status=status.HTTP_400_BAD_REQUEST)

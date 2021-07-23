@@ -101,3 +101,26 @@ class EmailOTPs(BaseModel):
     email = models.EmailField()
     otp = models.IntegerField(default=0)
     is_used = models.BooleanField(default=False)
+
+
+class PostNotification(BaseModel):
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='user_id'
+    )
+    comments = models.BooleanField(default=False)
+    like_dislike = models.BooleanField(default=False)
+    every_hour = models.BooleanField(default=False)
+    every_three_hours = models.BooleanField(default=False)
+    every_five_hours = models.BooleanField(default=False)
+    # comments = models.BooleanField(default=False)
+
+class OtherSettings(BaseModel):
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE
+    )
+    direct_message = models.BooleanField(default=False)
+    chat_alert = models.BooleanField(default=False)
+    allow_mentions = models.BooleanField(default=False)
