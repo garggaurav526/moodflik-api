@@ -20,16 +20,30 @@ class LikePost(BaseModel):
     
     @property
     def like_post_fields(self):
-      "return all the fields"
-      post_list = {'id':self.id, 'content': self.content, 
-      'photo': self.photo,'video':self.video, 
-      'gif': self.gif, 'file': self.file,
-      'why_content': self.why_content,'created_date':self.created_date,
-      'user_id': self.user.id, 'username': self.user.username, 
-      'first_name': self.user.first_name,
-      'last_name': self.user.last_name
-      }
-      return post_list
+        "return all the fields"
+        post_list = {'post_id': self.id, 'why_content': self.why_content, 'file': self.file, 'gif': self.gif,
+             'video': self.video, 'photo': self.photo, 'content': self.content,'created_at':self.created_date,
+                   'updated_at': self.updated_at,
+        'user_id': self.bio.user.id, 'username': self.bio.user.username,
+        'first_name': self.bio.user.first_name,
+        'last_name': self.bio.user.last_name,
+                   'profile_image': self.bio.photo_url,
+        }
+        return post_list
+
+    @property
+    def reactions(self):
+        filtered_reactions = LikePostReactions.objects.filter(like_post__id=self.id)
+        favorites = filtered_reactions.filter(favorite=1).values_list('bios__user_id', flat=True)
+        like = filtered_reactions.filter(like=1).values_list('bios__user_id', flat=True)
+        dislike = filtered_reactions.filter(dislike=1).values_list('bios__user_id', flat=True)
+        share = filtered_reactions.filter(share=1).values_list('bios__user_id', flat=True)
+        seen = filtered_reactions.filter(seen=1).values_list('bios__user_id', flat=True)
+        comment = filtered_reactions.filter(comment__isnull=False).values_list('bios__user_id', flat=True)
+        return {
+             'favorites': favorites, 'like': like,
+             'dislike': dislike, 'share': share, 'seen': seen,
+             'comment': comment, }
 
 class DislikePost(BaseModel):
     bio = models.ForeignKey(
@@ -57,6 +71,21 @@ class DislikePost(BaseModel):
       'last_name': self.user.last_name
       }
       return post_list
+
+    @property
+    def reactions(self):
+        filtered_reactions = DisLikePostReactions.objects.filter(dislike_post__id=self.id)
+        favorites = filtered_reactions.filter(favorite=1).values_list('bios__user_id', flat=True)
+        like = filtered_reactions.filter(like=1).values_list('bios__user_id', flat=True)
+        dislike = filtered_reactions.filter(dislike=1).values_list('bios__user_id', flat=True)
+        share = filtered_reactions.filter(share=1).values_list('bios__user_id', flat=True)
+        seen = filtered_reactions.filter(seen=1).values_list('bios__user_id', flat=True)
+        comment = filtered_reactions.filter(comment__isnull=False).values_list('bios__user_id', flat=True)
+        return {
+             'favorites': favorites, 'like': like,
+             'dislike': dislike, 'share': share, 'seen': seen,
+             'comment': comment, }
+
 
 class LikePostReactions(BaseModel):
     bios = models.ForeignKey(
