@@ -153,9 +153,11 @@ class DislikePostView(views.APIView):
 			print("Error:", e)
 			return Response({'status': False ,'message': "something went wrong"})
 
-class AddFavorite(views.APIView):
+class AddFavorite(generics.ListCreateAPIView):
 	authentication_classes = [TokenAuthentication]
 	permission_classes = [IsAuthenticated]
+	pagination_class = pagination.PageNumberPagination
+	pagination.PageNumberPagination.page_size_query_param = 'limit'
 	def get(self, request):
 		try:
 			like_filtered_posts = LikePost.objects.order_by('-created_date')
@@ -174,13 +176,23 @@ class AddFavorite(views.APIView):
 						 'favorites':favorites, 'like':like,'profile_image':post.bio.photo_url,
 						'dislike':dislike, 'share':share, 'seen':seen, 
 						'comment':comment,'created_at':post.created_at,'updated_at':post.updated_at})
-			paginator = PageNumberPagination()
-			paginator.page_size = 20
-			likepost_page = paginator.paginate_queryset(likepost_reactions, request)
-			favorites = likepost_page
+			# paginator = PageNumberPagination()
+			from django.core.paginator import Paginator
+			# paginator.page_size = 20
+			# likepost_page = Paginator(likepost_reactions,10)
+			# favorites = likepost_page
+			paginator = Paginator(likepost_reactions, request.GET['page_limit'])
+
+			try:
+				favorites = paginator.page(request.GET['page'])
+			except PageNotAnInteger:
+				favorites = paginator.page(1)
+			except EmptyPage:
+				favorites = paginator.page(paginator.num_pages)
+
 			# grouper(2, likepost_reactions)
 			# print(likepost_page)
-			return Response({'status':True, 'favorites':favorites})
+			return Response({'status':True, 'favorites':list(favorites)})
 		except Exception as e:
 			print("Error:", e)
 			return Response({'status': False ,'message': "something went wrong"})
@@ -262,12 +274,15 @@ class DislikeFav(views.APIView):
 					 'dislike': dislike, 'share': share, 'seen': seen,
 					 'comment': comment,'created_at':post.created_at,'updated_at':post.updated_at})
 
-		paginator = PageNumberPagination()
-		paginator.page_size = 20
-		dislikepost_page = paginator.paginate_queryset(dislikepost_reactions, request)
-		# dislikepost_page = grouper(20,dislikepost_reactions)
-		favorites = dislikepost_page
-		return Response({'status': True, 'favorites': favorites})
+		paginator = Paginator(dislikepost_reactions, request.GET['page_limit'])
+
+		try:
+			favorites = paginator.page(request.GET['page'])
+		except PageNotAnInteger:
+			favorites = paginator.page(1)
+		except EmptyPage:
+			favorites = paginator.page(paginator.num_pages)
+		return Response({'status': True, 'favorites': list(favorites)})
 
 
 class AddLike(views.APIView):
