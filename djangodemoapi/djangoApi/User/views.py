@@ -332,9 +332,11 @@ class ShowingFiguresSettings(views.APIView):
             if user and settings:
                 for setting in settings:
                     if setting.setting==0:
-                        return Response({'status':True, 'setting':'Show_Posts'})
+                        return Response({'status':True, 'setting':'Show_Posts_to_anyone'})
                     if setting.setting==1:
-                        return Response({'status':True, 'setting':'Not_Showing'})
+                        return Response({'status':True, 'setting':'Only_Followers'})
+                    if setting.setting==2:
+                        return Response({'status':True, 'setting':'Only_Following'})
             else:
                 return Response({'status':False, 'message': 'enter valid details!'})
         except Exception as e:
@@ -346,7 +348,7 @@ class ShowingFiguresSettings(views.APIView):
             user = CustomUser.objects.get(email=request.user)
             privacy_settings = request.data.get('privacy_settings')
             settings = ShowLikeDisLikeSettings.objects.filter(user=user)
-            if int(privacy_settings) == 0 or int(privacy_settings)==1:
+            if int(privacy_settings) in range(0,3):
                 if not settings:
                     p = ShowLikeDisLikeSettings(user=user, setting=privacy_settings)
                     p.save()
