@@ -431,6 +431,15 @@ class PostStats(views.APIView):
 
 
 class PostNotificationAPI(views.APIView):
+
+    def get(self,request):
+        # import pdb;pdb.set_trace()
+        if request.GET.get('id'):
+            obj = PostNotification.objects.get(user=request.GET.get('id'))
+            ser = PNSSerializer(obj).data
+            return Response(ser)
+        else:
+            return Response({'message':"Unauthorized"},status=status.HTTP_401_UNAUTHORIZED)
     def post(self,request):
         # import pdb;pdb.set_trace()
         data=request.data
