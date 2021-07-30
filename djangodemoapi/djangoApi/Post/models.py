@@ -68,7 +68,8 @@ class DislikePost(BaseModel):
       'why_content': self.why_content,'created_date':self.created_date,
       'user_id': self.user.id, 'username': self.user.username, 
       'first_name': self.user.first_name,
-      'last_name': self.user.last_name
+      'last_name': self.user.last_name,
+                   'profile_image': self.bio.photo_url,
       }
       return post_list
 
@@ -115,7 +116,8 @@ class LikePostReactions(BaseModel):
       'why_content': self.like_post.why_content,'created_date':self.like_post.created_date,
       'user_id': self.like_post.user.id, 'username': self.like_post.user.username, 
       'first_name': self.like_post.user.first_name,
-      'last_name': self.like_post.user.last_name
+      'last_name': self.like_post.user.last_name,
+                   'profile_image': self.like_post.user.photo_url,
       }
       return post_list
       @property
@@ -140,6 +142,25 @@ class DisLikePostReactions(BaseModel):
     share = models.IntegerField()
     seen = models.IntegerField()
     comment = models.TextField(null=True)
+
+    @property
+    def like_reactions(self):
+        "Returns the list of all fields"
+        post_list = {'id': self.dislike_post.id, 'content': self.dislike_post.content,
+                     'photo': self.dislike_post.photo, 'video': self.dislike_post.video,
+                     'gif': self.dislike_post.gif, 'file': self.dislike_post.file,
+                     'why_content': self.dislike_post.why_content, 'created_date': self.dislike_post.created_date,
+                     'user_id': self.dislike_post.user.id, 'username': self.dislike_post.user.username,
+                     'first_name': self.dislike_post.user.first_name,
+                     'last_name': self.dislike_post.user.last_name,
+                     'profile_image': self.dislike_post.user.photo_url,
+                     }
+        return post_list
+
+        @property
+        def comments(self):
+            return self.comment
+
 
 class Follow(BaseModel):
   follower = models.ForeignKey(

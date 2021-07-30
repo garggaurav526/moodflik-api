@@ -36,4 +36,6 @@ urlpatterns = [
     url(r'^dislikehome/$',views.HomeDislikePosts.as_view(),name='home'),
     # Api for getting the followers and following data
     url(r'^follow_details/$',views.FollowView.as_view(),name='follow_details'),
+    url(r'^my_like_posts/$',views.MyLikePosts.as_view(),name='my_like_posts'),
+    url(r'^my_dislike_posts/$',views.MyDisLikePosts.as_view(),name='my_dislike_posts'),
 ]

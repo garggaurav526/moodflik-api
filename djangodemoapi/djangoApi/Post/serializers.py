@@ -12,7 +12,7 @@ class LikePostShow(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='bio.user.username')
     first_name = serializers.ReadOnlyField(source='bio.user.first_name')
     last_name = serializers.ReadOnlyField(source='bio.user.last_name')
-    profile_image = serializers.ReadOnlyField(source='bio.user.profile_image')
+    profile_image = serializers.ReadOnlyField(source='bio.photo_url')
 
     class Meta:
         model = LikePost
@@ -26,7 +26,7 @@ class DisLikePostShow(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='bio.user.username')
     first_name = serializers.ReadOnlyField(source='bio.user.first_name')
     last_name = serializers.ReadOnlyField(source='bio.user.last_name')
-    profile_image = serializers.ReadOnlyField(source='bio.user.profile_image')
+    profile_image = serializers.ReadOnlyField(source='bio.photo_url')
 
     class Meta:
         model = LikePost

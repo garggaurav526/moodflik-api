@@ -713,39 +713,17 @@ class Home(generics.ListCreateAPIView):
 	serializer_class=LikePostShow
 	pagination_class=pagination.PageNumberPagination
 	pagination.PageNumberPagination.page_size_query_param = 'limit'
-	# def get(self, request):
-	# 	try:
-	# 		like_filtered_posts = LikePost.objects.all().order_by('-created_date')
-	# 		# likepost_reactions = []
-	# 		# for post in like_filtered_posts:
-	# 		# 	filtered_reactions = LikePostReactions.objects.filter(like_post__id=post.id)
-	# 		# 	favorites = filtered_reactions.filter(favorite=1).values_list('bios__user_id',flat=True)
-	# 		# 	like = filtered_reactions.filter(like=1).values_list('bios__user_id',flat=True)
-	# 		# 	dislike = filtered_reactions.filter(dislike=1).values_list('bios__user_id',flat=True)
-	# 		# 	share = filtered_reactions.filter(share=1).values_list('bios__user_id',flat=True)
-	# 		# 	seen = filtered_reactions.filter(seen=1).values_list('bios__user_id',flat=True)
-	# 		# 	comment = filtered_reactions.filter(comment__isnull=False).values_list('bios__user_id',flat=True)
-	# 		# 	likepost_reactions.append({'post_id':post.id,'why_content':post.why_content,'file':post.file,'gif':post.gif,'video':post.video,'photo':post.photo,'content':post.content,'user_id':post.bio.user.id, 'username':post.bio.user.username,
-	# 		# 		'first_name':post.bio.user.first_name,'last_name':post.bio.user.last_name,
-	# 		# 		 'favorites':favorites, 'like':like,'profile_image':post.bio.photo_url,
-	# 		# 		'dislike':dislike, 'share':share, 'seen':seen,
-	# 		# 		'comment':comment,'created_at':post.created_at,'updated_at':post.updated_at})
-	# 		ser = LikePostShow(like_filtered_posts,many=True).data
-	#
-	# 		# print(likepost_reactions)
-	# 		# Code for implemeting pagination
-	# 		# paginator = PageNumberPagination()
-	# 		# paginator.page_size = 20
-	# 		# likepost_page = paginator.paginate_queryset(likepost_reactions, request)
-	#
-	#
-	# 		# posts = likepost_page#, 'dislike_post':dislikepost_page}
-	# 		# posts = {'like_post': 'like_post_list'}
-	# 		return Response({'status': True, 'posts': ser})
-	# 	except Exception as e:
-	# 		msg = str(e)
-	# 		print("Error:", e)
-	# 		return Response({'status': False ,'message': msg, 'posts': []})
+
+	def get_queryset(self):
+		user = self.request.user
+		type=self.request.GET.get('type')
+		if type and type=='follow':
+			posts = self.queryset.filter(
+				bio__user__in=Follow.objects.filter(follower=user).values_list('id', flat=True))
+
+		else:
+			posts = self.queryset
+		return posts
 
 
 class HomeDislikePosts(generics.ListCreateAPIView):
@@ -753,33 +731,9 @@ class HomeDislikePosts(generics.ListCreateAPIView):
 	permission_classes = [IsAuthenticated]
 	queryset = DislikePost.objects.all().order_by('-created_date')
 	serializer_class = DisLikePostShow
+	pagination_class=pagination.PageNumberPagination
+	pagination.PageNumberPagination.page_size_query_param = 'limit'
 
-	# def get(self,request):
-	#
-	# 	dislike_filtered_posts = DislikePost.objects.order_by('-created_date')
-	# 	dislikepost_reactions = []
-	# 	for post in dislike_filtered_posts:
-	# 		filtered_reactions = DisLikePostReactions.objects.filter(dislike_post__id=post.id)
-	# 		favorites = filtered_reactions.filter(favorite=1).values_list('bios__user_id', flat=True)
-	# 		like = filtered_reactions.filter(like=1).values_list('bios__user_id', flat=True)
-	# 		dislike = filtered_reactions.filter(dislike=1).values_list('bios__user_id', flat=True)
-	# 		share = filtered_reactions.filter(share=1).values_list('bios__user_id', flat=True)
-	# 		seen = filtered_reactions.filter(seen=1).values_list('bios__user_id', flat=True)
-	# 		comment = filtered_reactions.filter(comment__isnull=False).values_list('bios__user_id', flat=True)
-	# 		dislikepost_reactions.append(
-	# 			{'post_id': post.id, 'why_content': post.why_content, 'file': post.file, 'gif': post.gif,
-	# 			 'video': post.video, 'photo': post.photo, 'content': post.content, 'user_id': post.bio.user.id,
-	# 			 'username': post.bio.user.username,'first_name': post.bio.user.first_name, 'last_name': post.bio.user.last_name,
-	# 			 'favorites': favorites, 'like': like, 'profile_image': post.bio.photo_url,
-	# 			 'dislike': dislike, 'share': share, 'seen': seen,
-	# 			 'comment': comment, 'created_at': post.created_at, 'updated_at': post.updated_at})
-	# 	# print(dislikepost_reactions)
-	# 	# paginator = PageNumberPagination()
-	# 	# paginator.page_size = 20
-	# 	# dislikepost_page = paginator.paginate_queryset(dislikepost_reactions, request)
-	# 	# posts = dislikepost_page
-	# 	# posts = {'like_post': 'like_post_list'}
-	# 	return Response({'status': True, 'posts': dislikepost_reactions})
 
 
 class FollowView(views.APIView):
@@ -843,3 +797,28 @@ class CommentsAPI(views.APIView):
 		# print(reaction_details)
 		result = sorted(reaction_details, key=lambda x: x['created_at'])
 		return Response(result[::-1])
+
+
+
+class MyLikePosts(generics.ListAPIView):
+	authentication_classes = [TokenAuthentication]
+	permission_classes = [IsAuthenticated]
+	pagination_class = pagination.PageNumberPagination
+	pagination.PageNumberPagination.page_size_query_param = 'limit'
+	serializer_class=LikePostShow
+	def get_queryset(self):
+		user = self.request.user
+		posts = LikePost.objects.filter(bio__user=self.request.user.id).order_by('-created_at')
+		return posts
+
+
+class MyDisLikePosts(generics.ListAPIView):
+	authentication_classes = [TokenAuthentication]
+	permission_classes = [IsAuthenticated]
+	pagination_class = pagination.PageNumberPagination
+	pagination.PageNumberPagination.page_size_query_param = 'limit'
+	serializer_class=DisLikePostShow
+	def get_queryset(self):
+		user = self.request.user
+		posts = DislikePost.objects.filter(bio__user=self.request.user.id).order_by('-created_at')
+		return posts
