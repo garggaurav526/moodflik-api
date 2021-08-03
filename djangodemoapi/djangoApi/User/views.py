@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from rest_framework import generics, permissions, status, views
+from rest_framework import generics, permissions, status, views,pagination,filters
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
@@ -82,7 +82,7 @@ class UserView(views.APIView):
         try:
             user_detail = Bio.objects.filter(user=user_id)
             if request.user.id==user_id or checkBioVisibility(request.user,CustomUser.objects.get(id=user_id)):
-                user_details = [{'user_id':user.user.id, 'username':user.user.username,
+                user_details = [{'user_id':user.user.id, 'occupant_id':user.user.occupant_id,'username':user.user.username,
                 'email':user.user.email,'profile_image':user.photo_url, 'cover_image':user.cover_photo_url
                 } for user in user_detail]
                 return Response({'status': True, 'users': user_details})
@@ -105,8 +105,10 @@ class AuthenticateUser(views.APIView):
                 user_id = User.objects.get(username=username).id
                 authenticated_userid = {user_id}
                 obj, created = Token.objects.get_or_create(user=user)
+                user.occupant_id=request.data.get('occupant_id')
+                user.save()
 
-                return Response({'status': True,'token': obj.key,'user_id': user_id, 'message': 'you are successfully logged in!'})
+                return Response({'status': True,'token': obj.key,'user_id': user_id,'occupant_id':user.occupant_id, 'message': 'you are successfully logged in!'})
             else:
                 return Response({'status': False, 'message': 'Please Enter valid login details!'},status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
@@ -184,6 +186,7 @@ class BioDetails(views.APIView):
             user = CustomUser.objects.get(email=request.user)
             bio = Bio.objects.filter(user=user)
             bio_details = [{'bio_id':col.id, 'user_id':col.user.id,
+                            'occupant_id':col.user.occupant_id,
                 'username': col.user.username,'first_name': col.user.first_name,'last_name': col.user.last_name, 'email': col.user.email, 'profile_photo':col.photo_url,
                 'phone_number':col.phone_number, 'country':col.country, 'city':col.city,
                 'website':col.website, 'me':col.me, 'like':col.like, 'dislike': col.dislike,
@@ -216,9 +219,18 @@ class BioDetails(views.APIView):
     		print("Error:", e)
     		return Response({'status': False ,'message': "something went wrong"})
 
+class BioDetailApi(views.APIView):
     def put(self, request, bio_id):
         try:
-            save_bio = get_object_or_404(Bio.objects.all(), pk=user_id)
+            save_bio = get_object_or_404(Bio.objects.all(), pk=bio_id)
+            try:
+                if request.data.get('occupant_id'):
+                    usr = save_bio.user
+                    usr.occupant_id=request.data.get('occupant_id')
+                    usr.save()
+            except Exception as e:
+                print(str(e))
+
             serializer = BioSerializer(instance=save_bio, data=request.data, partial=True)
             if serializer.is_valid(raise_exception=True):
                 article_saved = serializer.save()
@@ -409,12 +421,17 @@ class BlockUsers(views.APIView):
             print("Error:", e)
             return Response({'status': False ,'message': "something went wrong"})
 
-
-class AllUsers(views.APIView):
-    def get(self,request):
-        users = User.objects.all()
-        ser = UserSerializer(users,many=True).data
-        return Response(ser)
+class AllUsers(generics.ListCreateAPIView):
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = UserSerializer
+    search_fields = ["username", "first_name",'last_name']
+    filter_backends = [filters.SearchFilter]
+    pagination_class = pagination.PageNumberPagination
+    pagination.PageNumberPagination.page_size_query_param = 'limit'
+    # def get(self,request):
+    #     users = .objects.all()
+    #     ser = (users,many=True).data
+    #     return Response(ser)
 
 
 class PostStats(views.APIView):
@@ -467,3 +484,39 @@ class OtherNotificationAPI(views.APIView):
             return Response({'status':True})
         else:
             return Response({'status': False},status=status.HTTP_400_BAD_REQUEST)
+
+from Post.models import Follow
+class FriendsListing(views.APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self,request):
+        following = list(Follow.objects.filter(follower=request.user).values_list('following',flat=True))
+        follower=list(Follow.objects.filter(following=request.user).values_list('follower',flat=True))
+        follower.extend(following)
+        # user_list = Bio.objects.filter(user__in=follower)
+        bio = Bio.objects.filter(user__in=follower)
+        if request.GET.get('search'):
+            bio = bio.filter(user__username__icontains=request.GET.get('search'))
+            bio = bio.union(bio.filter(user__first_name__icontains=request.GET.get('search')))
+            bio = bio.union(bio.filter(user__last_name__icontains=request.GET.get('search')))
+        bio_details = [{'bio_id': col.id, 'user_id': col.user.id,
+                        'occupant_id': col.user.occupant_id,
+                        'username': col.user.username, 'first_name': col.user.first_name,
+                        'last_name': col.user.last_name, 'email': col.user.email, 'profile_photo': col.photo_url,
+                        'phone_number': col.phone_number, 'country': col.country, 'city': col.city,
+                        'website': col.website, 'me': col.me, 'like': col.like, 'dislike': col.dislike,
+                        'cover_photo_url': col.cover_photo_url} for col in bio]
+        return Response({'status': True, 'bio_details': bio_details})
+
+
+class GetUserByOccID(views.APIView):
+    def get(self,request,occupant_id):
+        bio = Bio.objects.filter(user__occupant_id=occupant_id)
+        bio_details = [{'bio_id': col.id, 'user_id': col.user.id,
+                        'occupant_id': col.user.occupant_id,
+                        'username': col.user.username, 'first_name': col.user.first_name,
+                        'last_name': col.user.last_name, 'email': col.user.email, 'profile_photo': col.photo_url,
+                        'phone_number': col.phone_number, 'country': col.country, 'city': col.city,
+                        'website': col.website, 'me': col.me, 'like': col.like, 'dislike': col.dislike,
+                        'cover_photo_url': col.cover_photo_url} for col in bio][0]
+        return Response({'status': True, 'bio_details': bio_details})

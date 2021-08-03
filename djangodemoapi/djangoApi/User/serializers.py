@@ -18,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'username', 'email', 'password', 'date_of_birth', 'gender', 'terms_confirmed')
+        fields = ('first_name', 'last_name', 'username', 'email', 'password', 'date_of_birth', 'gender', 'terms_confirmed','occupant_id','date_joined')
 
     def validate_email(self, value):
         if CustomUser.objects.filter(email=value).exists():
@@ -103,18 +103,18 @@ class BioSerializer(serializers.ModelSerializer):
         model = Bio
         fields = ['user', 'phone_number', 'country', 'city', 'website', 'me', 'like', 'dislike', 'photo_url','cover_photo_url']
 
-    def update(self, instance, validated_data):
-        instance.phone_number = validated_data['phone_number']
-        instance.country = validated_data['country']
-        instance.city = validated_data['city']
-        instance.website = validated_data['website']
-        instance.me = validated_data['me']
-        instance.like = validated_data['like']
-        instance.dislike = validated_data['dislike']
-        instance.photo_url = validated_data['photo_url']
-        instance.cover_photo_url = validated_data['cover_photo_url']
-        instance.save()
-        return instance
+    # def update(self, instance, validated_data):
+    #     instance.phone_number = validated_data['phone_number']
+    #     instance.country = validated_data['country']
+    #     instance.city = validated_data['city']
+    #     instance.website = validated_data['website']
+    #     instance.me = validated_data['me']
+    #     instance.like = validated_data['like']
+    #     instance.dislike = validated_data['dislike']
+    #     instance.photo_url = validated_data['photo_url']
+    #     instance.cover_photo_url = validated_data['cover_photo_url']
+    #     instance.save()
+    #     return instance
 
 class PostSettingsSerializer(serializers.ModelSerializer):
     class Meta:

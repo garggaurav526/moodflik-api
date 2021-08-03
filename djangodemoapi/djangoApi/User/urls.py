@@ -20,6 +20,7 @@ urlpatterns = [
     url(r'^authenticate_email/$', views.AuthenticateEmail.as_view(), name="authenticate_email"),
     
     url(r'^bio/$', views.BioDetails.as_view(), name="bio"),
+    url(r'^bio/(?P<bio_id>\d+)/$', views.BioDetailApi.as_view(), name="bio"),
 
     url(r'^privacy_setting/$', views.PrivacySetting.as_view(), name="privacy_setting"),
     
@@ -39,5 +40,7 @@ urlpatterns = [
     url(r'^post_notifications/$', views.PostNotificationAPI.as_view(), name='post_notification'),
     url(r'^others_settings/$', views.OtherNotificationAPI.as_view(), name='others_settings'),
     url(r'^post_stats/(?P<user_id>\d+)$', views.PostStats.as_view(), name='post_stats'),
+    url(r'^friendlist/$', views.FriendsListing.as_view(), name='fl'),
+    url(r'^get_user_by_occ_id/(?P<occupant_id>\d+)$', views.GetUserByOccID.as_view(), name='get_user_by_occ_id'),
 
 ]
